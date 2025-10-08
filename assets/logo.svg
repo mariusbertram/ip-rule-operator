@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="320" height="120" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ip-rule-operator logo">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#13547a"/>
+      <stop offset="100%" stop-color="#80d0c7"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 24px 'Helvetica Neue', Arial, sans-serif; fill: #0d1117; }
+      .subtitle { font: 400 12px 'Helvetica Neue', Arial, sans-serif; fill: #1f2933; letter-spacing: 1px; }
+      .mono { font: 600 12px 'Courier New', monospace; fill: #0d1117; }
+    </style>
+  </defs>
+  <rect rx="12" ry="12" x="0" y="0" width="320" height="120" fill="#f5f9fa" stroke="#d0e2e6"/>
+  <!-- Stylized routing symbol -->
+  <g transform="translate(24,20)">
+    <circle cx="36" cy="36" r="34" fill="url(#grad)" stroke="#0d384b" stroke-width="2"/>
+    <path d="M20 36h32M36 20v32" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <path d="M36 8 L46 20 L26 20 Z" fill="#ffffffdd"/>
+    <path d="M36 64 L26 52 L46 52 Z" fill="#ffffffdd"/>
+  </g>
+  <text class="title" x="120" y="50">ip-rule-operator</text>
+  <text class="subtitle" x="120" y="70">Policy Routing for Service IPs</text>
+  <text class="mono" x="120" y="90">from svc lookup table </text>
+</svg>
