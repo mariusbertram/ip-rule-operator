@@ -36,7 +36,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-10-09T07:54:43Z"
+    createdAt: "2025-10-09T11:27:30Z"
     features.operators.openshift.io/disconnected: "true"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -185,8 +185,8 @@ spec:
                       - /manager
                     env:
                       - name: RELATED_IMAGE_IPRULE_AGENT
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:ab2cd35f3cf29a271766ca1981ee11d13f8d0863c588bc1d1adca133daeff90c
-                    image: ghcr.io/mariusbertram/iprule-controller@sha256:714e8ab046d70555a704862858c37d0c885f8bba30f61f21cca5d960e542c1ea
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:05b75fa61552e65f544f170e79109d532277302bda24b9a4d14685e5927fb09b
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:551805182c899a5b4404144c76f40ee0f60b07174c473a4a9e77f4e22511cd60
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -275,10 +275,10 @@ spec:
     name: Marius Bertram
     url: https://github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:ab2cd35f3cf29a271766ca1981ee11d13f8d0863c588bc1d1adca133daeff90c
-      name: iprule-agent
-    - image: ghcr.io/mariusbertram/iprule-controller@sha256:714e8ab046d70555a704862858c37d0c885f8bba30f61f21cca5d960e542c1ea
-      name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:ab2cd35f3cf29a271766ca1981ee11d13f8d0863c588bc1d1adca133daeff90c
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:05b75fa61552e65f544f170e79109d532277302bda24b9a4d14685e5927fb09b
       name: iprule_agent
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:05b75fa61552e65f544f170e79109d532277302bda24b9a4d14685e5927fb09b
+      name: iprule-agent
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:551805182c899a5b4404144c76f40ee0f60b07174c473a4a9e77f4e22511cd60
+      name: manager
   version: 0.0.1

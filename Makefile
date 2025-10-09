@@ -53,7 +53,7 @@ OPERATOR_SDK_VERSION ?= v1.41.1
 IMG ?= ghcr.io/mariusbertram/iprule-controller:v$(VERSION)
 # Agent image URL
 AGENT_IMG ?= ghcr.io/mariusbertram/iprule-agent:v$(VERSION)
-
+AGENT_IMG_LATEST ?= ghcr.io/mariusbertram/iprule-agent:latest
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -163,11 +163,11 @@ agent-build: generate fmt vet ## Build the iprule-agent binary
 
 .PHONY: agent-image-build
 agent-image-build: agent-build ## Build the iprule-agent container image
-	$(CONTAINER_TOOL) build -f Dockerfile.agent -t $(AGENT_IMG) .
+	$(CONTAINER_TOOL) --connection rhel10 build -f Dockerfile.agent -t $(AGENT_IMG) -t $(AGENT_IMG_LATEST) .
 
 .PHONY: agent-image-push
 agent-image-push: ## Push the iprule-agent container image
-	$(CONTAINER_TOOL) push $(AGENT_IMG)
+	$(CONTAINER_TOOL) --connection rhel10 push $(AGENT_IMG) && $(CONTAINER_TOOL) --connection rhel10 push $(AGENT_IMG_LATEST)
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
@@ -182,11 +182,11 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} .
+	$(CONTAINER_TOOL) --connection rhel10 build -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
-	$(CONTAINER_TOOL) push ${IMG}
+	$(CONTAINER_TOOL) --connection rhel10 push ${IMG}
 
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
@@ -329,19 +329,20 @@ endif
 bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	cd config/agent && $(KUSTOMIZE) edit set image iprule-agent=$(AGENT_IMG)
 	# Agent Platzhalter temporär ersetzen
-	cp config/manager/manager.yaml config/manager/manager.yaml.orig
-	sed -i.bak "s|__RELATED_AGENT_IMAGE__|$(AGENT_IMG)|g" config/manager/manager.yaml
+	#cp config/manager/manager.yaml config/manager/manager.yaml.orig
+	#sed -i.bak "s|__RELATED_AGENT_IMAGE__|$(AGENT_IMG)|g" config/manager/manager.yaml
 	# Bundle generieren
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	# Original manager.yaml wiederherstellen
-	mv config/manager/manager.yaml.orig config/manager/manager.yaml
-	rm -f config/manager/manager.yaml.bak
+	#mv config/manager/manager.yaml.orig config/manager/manager.yaml
+	#rm -f config/manager/manager.yaml.bak
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_TOOL) --connection rhel10 build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.

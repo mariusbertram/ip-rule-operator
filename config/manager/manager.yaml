@@ -48,7 +48,7 @@ spec:
         env:
           # RELATED_IMAGE_*: wird vom operator-sdk in spec.relatedImages der CSV aufgenommen
           - name: RELATED_IMAGE_IPRULE_AGENT
-            value: __RELATED_AGENT_IMAGE__ # related-agent-image placeholder
+            value: ghcr.io/mariusbertram/iprule-agent:latest # related-agent-image placeholder
         ports: []
         securityContext:
           allowPrivilegeEscalation: false
