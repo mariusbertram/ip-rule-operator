@@ -228,7 +228,13 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	# Agent Platzhalter ersetzen
+	cp config/manager/manager.yaml config/manager/manager.yaml.orig
+	sed -i.bak "s|__RELATED_AGENT_IMAGE__|$(AGENT_IMG)|g" config/manager/manager.yaml
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	# Original wiederherstellen
+	mv config/manager/manager.yaml.orig config/manager/manager.yaml
+	rm -f config/manager/manager.yaml.bak
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -323,7 +329,14 @@ endif
 bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	# Agent Platzhalter temporär ersetzen
+	cp config/manager/manager.yaml config/manager/manager.yaml.orig
+	sed -i.bak "s|__RELATED_AGENT_IMAGE__|$(AGENT_IMG)|g" config/manager/manager.yaml
+	# Bundle generieren
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	# Original manager.yaml wiederherstellen
+	mv config/manager/manager.yaml.orig config/manager/manager.yaml
+	rm -f config/manager/manager.yaml.bak
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 .PHONY: bundle-build

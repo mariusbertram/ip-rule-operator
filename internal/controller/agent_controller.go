@@ -96,7 +96,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	name := "iprule-agent"
 	image := agent.Spec.Image
 	if image == "" {
-		image = os.Getenv("AGENT_IMAGE")
+		image = os.Getenv("RELATED_IMAGE_IPRULE_AGENT")
 	}
 	if image == "" {
 		image = "iprule-agent:latest"
