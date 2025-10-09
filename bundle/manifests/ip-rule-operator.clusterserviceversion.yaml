@@ -1,0 +1,284 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "api.operator.brtrm.dev/v1alpha1",
+          "kind": "Agent",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "ip-rule-operator"
+            },
+            "name": "agent-sample"
+          },
+          "spec": {
+            "nodeSelectorLabel": "node-role.kubernetes.io/fe"
+          }
+        },
+        {
+          "apiVersion": "api.operator.brtrm.dev/v1alpha1",
+          "kind": "IPRule",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "ip-rule-operator"
+            },
+            "name": "iprule-sample"
+          },
+          "spec": {
+            "cidr": "10.0.0.0/24",
+            "nodeSelectorLabel": "node-role.kubernetes.io/master",
+            "table": 254
+          }
+        }
+      ]
+    capabilities: Basic Install
+    createdAt: "2025-10-09T07:54:43Z"
+    features.operators.openshift.io/disconnected: "true"
+    operators.operatorframework.io/builder: operator-sdk-v1.41.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+  name: ip-rule-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+      - description: Agent is the Schema for the agents API.
+        displayName: Agent
+        kind: Agent
+        name: agents.api.operator.brtrm.dev
+        version: v1alpha1
+      - description: IPRule is the Schema for the iprules API.
+        displayName: IPRule
+        kind: IPRule
+        name: iprules.api.operator.brtrm.dev
+        version: v1alpha1
+  description: The ip-rule-operator automates Linux Policy Routing rules (ip rule) for Kubernetes / OpenShift clusters based on Service LoadBalancer IPs and declarative routing table mappings.
+  displayName: iprules-operator
+  icon:
+    - base64data: ""
+      mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+                - services
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - serviceaccounts
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - agents
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - agents/status
+              verbs:
+                - get
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - ipruleconfigs
+                - iprules
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - iprules/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - iprules/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets/status
+              verbs:
+                - get
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
+          serviceAccountName: ip-rule-operator-controller-manager
+      deployments:
+        - label:
+            app.kubernetes.io/managed-by: kustomize
+            app.kubernetes.io/name: ip-rule-operator
+            control-plane: controller-manager
+          name: ip-rule-operator-controller-manager
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app.kubernetes.io/name: ip-rule-operator
+                control-plane: controller-manager
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/default-container: manager
+                labels:
+                  app.kubernetes.io/name: ip-rule-operator
+                  control-plane: controller-manager
+              spec:
+                containers:
+                  - args:
+                      - --metrics-bind-address=:8443
+                      - --leader-elect
+                      - --health-probe-bind-address=:8081
+                    command:
+                      - /manager
+                    env:
+                      - name: RELATED_IMAGE_IPRULE_AGENT
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:ab2cd35f3cf29a271766ca1981ee11d13f8d0863c588bc1d1adca133daeff90c
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:714e8ab046d70555a704862858c37d0c885f8bba30f61f21cca5d960e542c1ea
+                    livenessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: 8081
+                      initialDelaySeconds: 15
+                      periodSeconds: 20
+                    name: manager
+                    readinessProbe:
+                      httpGet:
+                        path: /readyz
+                        port: 8081
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 128Mi
+                      requests:
+                        cpu: 10m
+                        memory: 64Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                securityContext:
+                  runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
+                serviceAccountName: ip-rule-operator-controller-manager
+                terminationGracePeriodSeconds: 10
+      permissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - coordination.k8s.io
+              resources:
+                - leases
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - events
+              verbs:
+                - create
+                - patch
+          serviceAccountName: ip-rule-operator-controller-manager
+    strategy: deployment
+  installModes:
+    - supported: false
+      type: OwnNamespace
+    - supported: false
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: true
+      type: AllNamespaces
+  keywords:
+    - Network
+  links:
+    - name: Ip Rule Operator
+      url: https://github.com/mariusbertram/ip-rule-operator
+  maintainers:
+    - email: marius@brtrm.de
+      name: mariusbertram
+  maturity: alpha
+  provider:
+    name: Marius Bertram
+    url: https://github.com/mariusbertram/ip-rule-operator
+  relatedImages:
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:ab2cd35f3cf29a271766ca1981ee11d13f8d0863c588bc1d1adca133daeff90c
+      name: iprule-agent
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:714e8ab046d70555a704862858c37d0c885f8bba30f61f21cca5d960e542c1ea
+      name: manager
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:ab2cd35f3cf29a271766ca1981ee11d13f8d0863c588bc1d1adca133daeff90c
+      name: iprule_agent
+  version: 0.0.1
