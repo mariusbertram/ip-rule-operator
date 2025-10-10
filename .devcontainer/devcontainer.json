@@ -2,13 +2,23 @@
   "name": "Kubebuilder DevContainer",
   "image": "golang:1.24",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    },
     "ghcr.io/devcontainers/features/git:1": {}
   },
 
   "runArgs": ["--network=host"],
 
+  "remoteUser": "root",
+  "containerUser": "root",
+
   "customizations": {
+    "jetbrains": {
+      "settings": {
+        "com.intellij:app:HttpConfigurable.use_proxy_pac": true
+      }
+    },
     "vscode": {
       "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
@@ -18,8 +28,6 @@
         "ms-azuretools.vscode-docker"
       ]
     }
-  },
-
-  "onCreateCommand": "bash .devcontainer/post-install.sh"
+  }
 }
 

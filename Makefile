@@ -163,11 +163,11 @@ agent-build: generate fmt vet ## Build the iprule-agent binary
 
 .PHONY: agent-image-build
 agent-image-build: agent-build ## Build the iprule-agent container image
-	$(CONTAINER_TOOL) --connection rhel10 build -f Dockerfile.agent -t $(AGENT_IMG) -t $(AGENT_IMG_LATEST) .
+	$(CONTAINER_TOOL)  build -f Dockerfile.agent -t $(AGENT_IMG) -t $(AGENT_IMG_LATEST) .
 
 .PHONY: agent-image-push
 agent-image-push: ## Push the iprule-agent container image
-	$(CONTAINER_TOOL) --connection rhel10 push $(AGENT_IMG) && $(CONTAINER_TOOL) --connection rhel10 push $(AGENT_IMG_LATEST)
+	$(CONTAINER_TOOL)  push $(AGENT_IMG) && $(CONTAINER_TOOL)  push $(AGENT_IMG_LATEST)
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
@@ -182,11 +182,11 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) --connection rhel10 build -t ${IMG} .
+	$(CONTAINER_TOOL)  build -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
-	$(CONTAINER_TOOL) --connection rhel10 push ${IMG}
+	$(CONTAINER_TOOL) push ${IMG}
 
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
