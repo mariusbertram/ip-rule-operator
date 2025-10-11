@@ -14,9 +14,7 @@ metadata:
             },
             "name": "agent-sample"
           },
-          "spec": {
-            "nodeSelectorLabel": "node-role.kubernetes.io/fe"
-          }
+          "spec": {}
         },
         {
           "apiVersion": "api.operator.brtrm.dev/v1alpha1",
@@ -36,7 +34,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-10-11T19:56:36Z"
+    createdAt: "2025-10-11T22:30:45Z"
     features.operators.openshift.io/disconnected: "true"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -94,9 +92,19 @@ spec:
             - apiGroups:
                 - api.operator.brtrm.dev
               resources:
+                - agents/finalizers
+                - iprules/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
                 - agents/status
+                - iprules/status
               verbs:
                 - get
+                - patch
+                - update
             - apiGroups:
                 - api.operator.brtrm.dev
               resources:
@@ -111,20 +119,6 @@ spec:
                 - update
                 - watch
             - apiGroups:
-                - api.operator.brtrm.dev
-              resources:
-                - iprules/finalizers
-              verbs:
-                - update
-            - apiGroups:
-                - api.operator.brtrm.dev
-              resources:
-                - iprules/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
                 - apps
               resources:
                 - daemonsets
@@ -136,6 +130,15 @@ spec:
                 - patch
                 - update
                 - watch
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets/finalizers
+              verbs:
+                - create
+                - delete
+                - get
+                - update
             - apiGroups:
                 - apps
               resources:
@@ -185,8 +188,8 @@ spec:
                       - /manager
                     env:
                       - name: RELATED_IMAGE_IPRULE_AGENT
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:0e70e8e64f1404c1f0b2764782b841970c0e6fe89c426bbc46a34a9650de149e
-                    image: ghcr.io/mariusbertram/iprule-controller@sha256:6709075f189d473cc4781e8665ecfaf10b993a548aaeee56b7fb6ca6f6a174d0
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -275,10 +278,10 @@ spec:
     name: Marius Bertram
     url: https://github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:0e70e8e64f1404c1f0b2764782b841970c0e6fe89c426bbc46a34a9650de149e
-      name: iprule-agent
-    - image: ghcr.io/mariusbertram/iprule-controller@sha256:6709075f189d473cc4781e8665ecfaf10b993a548aaeee56b7fb6ca6f6a174d0
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
       name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:0e70e8e64f1404c1f0b2764782b841970c0e6fe89c426bbc46a34a9650de149e
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
       name: iprule_agent
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
+      name: iprule-agent
   version: 0.0.1

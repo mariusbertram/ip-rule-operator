@@ -18,8 +18,12 @@ rules:
   - api.operator.brtrm.dev
   resources:
   - ipruleconfigs
+  - iprules
   verbs:
-  - get
-  - list
-  - watch
-  - delete
+  - '*'
+- apiGroups:
+  - apps/v1
+  resources:
+  - daemonsets/finalizers
+  verbs:
+  - update
