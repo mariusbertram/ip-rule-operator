@@ -8,6 +8,16 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["get", "list", "watch"]
-- apiGroups: ["api.operator.brtrm.dev"]
-  resources: ["ipruleconfigs"]
-  verbs: ["get", "list", "watch", "delete"]
+- apiGroups:
+    - api.operator.brtrm.dev
+  resources:
+    - ipruleconfigs
+    - iprules
+  verbs:
+    - '*'
+- apiGroups:
+    - apps/v1
+  resources:
+    - daemonsets/finalizers
+  verbs:
+    - update

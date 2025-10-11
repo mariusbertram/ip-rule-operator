@@ -314,6 +314,14 @@ metadata:
   name: ip-rule-operator-controller-manager
   namespace: ip-rule-operator-system
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: ip-rule-operator
+  name: ip-rule-operator-iprule-agent
+  namespace: ip-rule-operator-system
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -451,6 +459,50 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
+    app.kubernetes.io/name: ip-rule-operator
+  name: ip-rule-operator-iprule-agent-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - api.operator.brtrm.dev
+  resources:
+  - ipruleconfigs
+  - iprules
+  verbs:
+  - '*'
+- apiGroups:
+  - apps/v1
+  resources:
+  - daemonsets/finalizers
+  verbs:
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: ip-rule-operator-iprule-agent-scc
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - ip-rule-operator-iprule-agent-scc
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: ip-rule-operator
   name: ip-rule-operator-iprule-editor-role
@@ -531,9 +583,19 @@ rules:
 - apiGroups:
   - api.operator.brtrm.dev
   resources:
+  - agents/finalizers
+  - iprules/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - api.operator.brtrm.dev
+  resources:
   - agents/status
+  - iprules/status
   verbs:
   - get
+  - patch
+  - update
 - apiGroups:
   - api.operator.brtrm.dev
   resources:
@@ -548,20 +610,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - api.operator.brtrm.dev
-  resources:
-  - iprules/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - api.operator.brtrm.dev
-  resources:
-  - iprules/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - apps
   resources:
   - daemonsets
@@ -573,6 +621,15 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - update
 - apiGroups:
   - apps
   resources:
@@ -623,6 +680,36 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ip-rule-operator-controller-manager
+  namespace: ip-rule-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: ip-rule-operator
+  name: ip-rule-operator-iprule-agent-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ip-rule-operator-iprule-agent-role
+subjects:
+- kind: ServiceAccount
+  name: ip-rule-operator-iprule-agent
+  namespace: ip-rule-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: ip-rule-operator
+  name: ip-rule-operator-iprule-agent-scc-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: iprule-agent-scc-binding
+subjects:
+- kind: ServiceAccount
+  name: ip-rule-operator-iprule-agent
   namespace: ip-rule-operator-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -703,6 +790,9 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
+        env:
+        - name: RELATED_IMAGE_IPRULE_AGENT
+          value: ghcr.io/mariusbertram/iprule-agent:latest
         image: ghcr.io/mariusbertram/iprule-controller:v0.0.1
         livenessProbe:
           httpGet:
@@ -738,3 +828,34 @@ spec:
       serviceAccountName: ip-rule-operator-controller-manager
       terminationGracePeriodSeconds: 10
       volumes: []
+---
+allowHostIPC: false
+allowHostNetwork: true
+allowHostPID: true
+allowHostPorts: true
+allowPrivilegeEscalation: false
+allowPrivilegedContainer: true
+allowedCapabilities:
+- NET_ADMIN
+apiVersion: security.openshift.io/v1
+fsGroup:
+  type: RunAsAny
+kind: SecurityContextConstraints
+metadata:
+  name: ip-rule-operator-iprule-agent-scc
+  namespace: ip-rule-operator-system
+readOnlyRootFilesystem: false
+requiredDropCapabilities: []
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+users: []
+volumes:
+- configMap
+- projected
+- downwardAPI
+- emptyDir
+- secret

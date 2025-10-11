@@ -19,7 +19,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vishvananda/netlink"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,6 +45,7 @@ var (
 	metricRulesDeleted      = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "rules_deleted_total", Help: "Number of ip rules successfully deleted"})
 	metricRuleErrors        = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "rule_errors_total", Help: "Errors while adding/deleting rules"})
 	metricConfigsProcessed  = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "ipruleconfigs_processed_total", Help: "Processed IPRuleConfig objects"})
+	metricConfigsDeleted    = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "ipruleconfigs_deleted_total", Help: "IPRuleConfig objects deleted (state=absent)"})
 	metricDesiredGauge      = prometheus.NewGauge(prometheus.GaugeOpts{Namespace: "iprule_agent", Name: "desired_rules", Help: "Desired (present) rules"})
 	metricPresentGauge      = prometheus.NewGauge(prometheus.GaugeOpts{Namespace: "iprule_agent", Name: "present_rules", Help: "Already existing rules"})
 	metricAbsentGauge       = prometheus.NewGauge(prometheus.GaugeOpts{Namespace: "iprule_agent", Name: "absent_rules", Help: "Rules marked absent (configs)"})
@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(metricRulesAdded, metricRulesDeleted, metricRuleErrors, metricConfigsProcessed, metricDesiredGauge, metricPresentGauge, metricAbsentGauge, metricReconcileDuration)
+	prometheus.MustRegister(metricRulesAdded, metricRulesDeleted, metricRuleErrors, metricConfigsProcessed, metricConfigsDeleted, metricDesiredGauge, metricPresentGauge, metricAbsentGauge, metricReconcileDuration)
 }
 
 var firstReady atomic.Bool
@@ -198,9 +198,10 @@ func reconcileOnce(ctx context.Context, c client.Client) error {
 				log.Printf("deleted ip rule: from %s lookup table %d priority %d", ip, table, prio)
 			}
 		}
-		if err := c.Delete(ctx, cfg, &client.DeleteOptions{Preconditions: &metav1.Preconditions{UID: &cfg.UID}}); err != nil {
+		if err := deleteIPRuleConfigWithRetry(ctx, c, cfg); err != nil {
 			log.Printf("failed deleting IPRuleConfig %s: %v", cfg.Name, err)
 		} else {
+			metricConfigsDeleted.Inc()
 			log.Printf("deleted IPRuleConfig %s (state=absent)", cfg.Name)
 		}
 	}
@@ -225,17 +226,16 @@ func buildRuleIndex() (map[string]bool, int, error) {
 		}
 		// We only support host masks (32/128). Other masks are treated as foreign and ignored.
 		ones, bits := rl.Src.Mask.Size()
-		if bits == 32 && ones != 32 {
-			continue
-		}
-		if bits == 128 && ones != 128 {
+		if (bits == 32 && ones != 32) || (bits == 128 && ones != 128) {
 			continue
 		}
 		ip := rl.Src.IP.String()
 		prio := rl.Priority
-		if prio == 0 { // also record key without priority marker
-			idx[ruleKey(ip, rl.Table, -1)] = true
-		}
+		// Wildcard entry (priority agnostic) – wichtig damit Konfigs ohne Priority (0)
+		// nicht ständig neue Regeln erzeugen, weil der Kernel beim Hinzufügen eine
+		// eigene Priority vergibt (≠0) und wir sonst die Präsenz nicht erkennen.
+		idx[ruleKey(ip, rl.Table, -1)] = true
+		// Konkrete Priority festhalten
 		idx[ruleKey(ip, rl.Table, prio)] = true
 		presentCount++
 	}
@@ -372,4 +372,26 @@ func bytesEqualMask(a, b net.IPMask) bool {
 		}
 	}
 	return true
+}
+
+// deleteIPRuleConfigWithRetry löscht ein IPRuleConfig Objekt robust (Konflikte/NotFound tolerant)
+func deleteIPRuleConfigWithRetry(ctx context.Context, c client.Client, cfg *apiv1alpha1.IPRuleConfig) error {
+	return retry(3, 100*time.Millisecond, func() error {
+		// Fresh fetch to avoid stale UID conflicts
+		fresh := &apiv1alpha1.IPRuleConfig{}
+		if err := c.Get(ctx, client.ObjectKey{Name: cfg.Name}, fresh); err != nil {
+			// Already gone
+			if client.IgnoreNotFound(err) == nil {
+				return nil
+			}
+			return err
+		}
+		if fresh.Spec.State != "absent" { // someone changed it back -> abort without error
+			return nil
+		}
+		if err := c.Delete(ctx, fresh); err != nil {
+			return err
+		}
+		return nil
+	})
 }

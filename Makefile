@@ -36,7 +36,7 @@ IMAGE_TAG_BASE ?= ghcr.io/mariusbertram/ip-rule-operator
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
-BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+BUNDLE_GEN_FLAGS ?= -q --overwrite --extra-service-accounts iprule-agent --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 
 # USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
 # You can enable this value if you would like to use SHA Based Digests
@@ -329,10 +329,6 @@ endif
 bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	cd config/agent && $(KUSTOMIZE) edit set image iprule-agent=$(AGENT_IMG)
-	# Agent Platzhalter temporär ersetzen
-	#cp config/manager/manager.yaml config/manager/manager.yaml.orig
-	#sed -i.bak "s|__RELATED_AGENT_IMAGE__|$(AGENT_IMG)|g" config/manager/manager.yaml
 	# Bundle generieren
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	# Original manager.yaml wiederherstellen
@@ -342,7 +338,7 @@ bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metada
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	$(CONTAINER_TOOL) --connection rhel10 build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
@@ -388,3 +384,9 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+.PHONY: build-all
+build-all: docker-build agent-image-build bundle-build catalog-build ## Build all images: manager, agent, bundle, and catalog.
+
+.PHONY: push-all
+push-all: docker-push agent-image-push bundle-push catalog-push ## Push all

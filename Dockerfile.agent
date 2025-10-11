@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 #############################
 # Final Stage
 #############################
-FROM gcr.io/distroless/static:nonroot AS final
+FROM registry.redhat.io/ubi10:latest AS final
 LABEL org.opencontainers.image.title = "iprule-agent" \
       org.opencontainers.image.source = "https://github.com/mariusbertram/ip-rule-operator"\
       org.opencontainers.image.description = "Agent managing Linux policy routing rules (ip rule) via IPRuleConfig CRs" \
@@ -33,6 +33,6 @@ LABEL org.opencontainers.image.title = "iprule-agent" \
 COPY --from=build /out/iprule-agent /iprule-agent
 
 # Non-root (Capabilities added via Pod SecurityContext – NET_ADMIN)
-USER nonroot:nonroot
+USER root:root
 
 ENTRYPOINT ["/iprule-agent"]

@@ -36,7 +36,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-10-09T11:27:30Z"
+    createdAt: "2025-10-11T19:56:36Z"
     features.operators.openshift.io/disconnected: "true"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -185,8 +185,8 @@ spec:
                       - /manager
                     env:
                       - name: RELATED_IMAGE_IPRULE_AGENT
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:05b75fa61552e65f544f170e79109d532277302bda24b9a4d14685e5927fb09b
-                    image: ghcr.io/mariusbertram/iprule-controller@sha256:551805182c899a5b4404144c76f40ee0f60b07174c473a4a9e77f4e22511cd60
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:0e70e8e64f1404c1f0b2764782b841970c0e6fe89c426bbc46a34a9650de149e
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:6709075f189d473cc4781e8665ecfaf10b993a548aaeee56b7fb6ca6f6a174d0
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -275,10 +275,10 @@ spec:
     name: Marius Bertram
     url: https://github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:05b75fa61552e65f544f170e79109d532277302bda24b9a4d14685e5927fb09b
-      name: iprule_agent
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:05b75fa61552e65f544f170e79109d532277302bda24b9a4d14685e5927fb09b
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:0e70e8e64f1404c1f0b2764782b841970c0e6fe89c426bbc46a34a9650de149e
       name: iprule-agent
-    - image: ghcr.io/mariusbertram/iprule-controller@sha256:551805182c899a5b4404144c76f40ee0f60b07174c473a4a9e77f4e22511cd60
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:6709075f189d473cc4781e8665ecfaf10b993a548aaeee56b7fb6ca6f6a174d0
       name: manager
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:0e70e8e64f1404c1f0b2764782b841970c0e6fe89c426bbc46a34a9650de149e
+      name: iprule_agent
   version: 0.0.1

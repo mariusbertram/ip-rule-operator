@@ -9,6 +9,7 @@ resources:
 - role_binding.yaml
 - leader_election_role.yaml
 - leader_election_role_binding.yaml
+
 # The following RBAC configurations are used to protect
 # the metrics endpoint with authn/authz. These configurations
 # ensure that only authorized users and service accounts
@@ -29,3 +30,10 @@ resources:
 - iprule_editor_role.yaml
 - iprule_viewer_role.yaml
 
+# iprule-agent
+- agent_cluster_role.yaml
+- agent_cluster_role_binding.yaml
+- agent_securitycontextconstraints.yaml
+- agent_service_account.yaml
+- agent-scc-clusterrole.yaml
+- agent_scc_binding.yaml

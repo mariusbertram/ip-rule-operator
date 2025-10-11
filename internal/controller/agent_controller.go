@@ -48,9 +48,11 @@ type AgentReconciler struct {
 
 // RBAC: manage Agents and DaemonSets
 // +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=agents,verbs=get;list;watch
-// +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=agents/status,verbs=get
+// +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=agents/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=agents/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=daemonsets/status,verbs=get
+// +kubebuilder:rbac:groups=apps,resources=daemonsets/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;create;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
@@ -133,7 +135,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			tolerations = agent.Spec.Tolerations
 		}
 		podSpec := corev1.PodSpec{
-			ServiceAccountName: "iprule-agent",
+			ServiceAccountName: "ip-rule-operator-iprule-agent",
 			HostNetwork:        true,
 			DNSPolicy:          corev1.DNSClusterFirstWithHostNet,
 			NodeSelector:       agent.Spec.NodeSelector,
@@ -142,7 +144,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				Name:            "agent",
 				Image:           image,
 				ImagePullPolicy: corev1.PullIfNotPresent,
-				SecurityContext: &corev1.SecurityContext{AllowPrivilegeEscalation: boolPtr(false), Capabilities: &corev1.Capabilities{Add: []corev1.Capability{"NET_ADMIN"}}, RunAsNonRoot: boolPtr(false)},
+				SecurityContext: &corev1.SecurityContext{AllowPrivilegeEscalation: boolPtr(false), Capabilities: &corev1.Capabilities{Add: []corev1.Capability{"NET_ADMIN"}}, RunAsNonRoot: boolPtr(false), RunAsUser: int64Ptr(0)},
 				Env: []corev1.EnvVar{
 					{Name: "NODE_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
 					{Name: "RECONCILE_PERIOD", Value: "10s"},
@@ -242,6 +244,8 @@ func computeTemplateHash(a *apiv1alpha1.Agent, image string) string {
 }
 
 func intstrPtr(v intstr.IntOrString) *intstr.IntOrString { return &v }
+
+func int64Ptr(v int64) *int64 { return &v }
 
 func upsertCondition(list []metav1.Condition, c metav1.Condition) []metav1.Condition {
 	out := make([]metav1.Condition, 0, len(list)+1)

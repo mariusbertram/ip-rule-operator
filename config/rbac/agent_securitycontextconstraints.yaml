@@ -3,9 +3,10 @@ kind: SecurityContextConstraints
 metadata:
   name: iprule-agent-scc
 allowHostNetwork: true
-allowHostPID: false
+allowHostPID:  true
+allowHostPorts: true
 allowHostIPC: false
-allowPrivilegedContainer: false
+allowPrivilegedContainer: true
 allowPrivilegeEscalation: false
 requiredDropCapabilities: []
 allowedCapabilities:
