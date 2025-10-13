@@ -1,25 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="320" height="120" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ip-rule-operator logo">
+<svg width="420" height="140" viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ip-rule-operator – Policy Routing Operator Logo">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#13547a"/>
-      <stop offset="100%" stop-color="#80d0c7"/>
+    <!-- Farbverläufe -->
+    <linearGradient id="grad-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
     </linearGradient>
+    <linearGradient id="grad-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="grad-text" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="40%" stop-color="#6366f1"/>
+      <stop offset="80%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <clipPath id="roundClip">
+      <rect x="0" y="0" width="420" height="140" rx="20" ry="20"/>
+    </clipPath>
     <style>
-      .title { font: 700 24px 'Helvetica Neue', Arial, sans-serif; fill: #0d1117; }
-      .subtitle { font: 400 12px 'Helvetica Neue', Arial, sans-serif; fill: #1f2933; letter-spacing: 1px; }
-      .mono { font: 600 12px 'Courier New', monospace; fill: #0d1117; }
+      :root { color-scheme: light dark; }
+      .panel { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+      .logo-title { font: 600 30px 'Inter', 'Helvetica Neue', Arial, sans-serif; letter-spacing: .5px; fill: url(#grad-text); }
+      .logo-sub { font: 400 13px 'Inter', 'Helvetica Neue', Arial, sans-serif; fill: #cbd5e1; letter-spacing: .5px; }
+      .node { stroke: #fff; stroke-width: 2; fill: url(#grad-accent); }
+      .path { fill: none; stroke: url(#grad-accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 4 8; }
+      .pulse { fill: none; stroke: #38bdf8; stroke-width: 2; opacity: .9; }
+      @media (prefers-reduced-motion: no-preference) {
+        .dash-anim { animation: dash 5s linear infinite; }
+        .pulse-anim { animation: pulse 2.8s ease-in-out infinite; }
+      }
+      @keyframes dash { to { stroke-dashoffset: -240; } }
+      @keyframes pulse { 0%,100% { r:18; opacity:.15;} 50% { r:34; opacity:0; } }
+      @media (prefers-color-scheme: light) {
+        .panel-bg { fill: #f8fafc; }
+        .logo-sub { fill: #475569; }
+      }
+      @media (prefers-color-scheme: dark) {
+        .panel-bg { fill: url(#grad-bg); }
+        .logo-sub { fill: #94a3b8; }
+      }
     </style>
   </defs>
-  <rect rx="12" ry="12" x="0" y="0" width="320" height="120" fill="#f5f9fa" stroke="#d0e2e6"/>
-  <!-- Stylized routing symbol -->
-  <g transform="translate(24,20)">
-    <circle cx="36" cy="36" r="34" fill="url(#grad)" stroke="#0d384b" stroke-width="2"/>
-    <path d="M20 36h32M36 20v32" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-    <path d="M36 8 L46 20 L26 20 Z" fill="#ffffffdd"/>
-    <path d="M36 64 L26 52 L46 52 Z" fill="#ffffffdd"/>
+
+  <g clip-path="url(#roundClip)">
+    <rect class="panel-bg panel" x="0" y="0" width="420" height="140"/>
+
+    <!-- Dekoratives leichtes Grid (nur dark) -->
+    <g opacity="0.15">
+      <path d="M0 20H420M0 60H420M0 100H420" stroke="#64748b" stroke-width="1"/>
+      <path d="M70 0V140M140 0V140M210 0V140M280 0V140M350 0V140" stroke="#64748b" stroke-width="1"/>
+    </g>
+
+    <!-- Icon Bereich -->
+    <g transform="translate(50,70)">
+      <!-- Puls Aura -->
+      <circle class="pulse pulse-anim" cx="0" cy="0" r="24" />
+      <!-- Hauptknoten -->
+      <circle class="node" cx="0" cy="0" r="18" />
+      <!-- Satelliten-Knoten -->
+      <circle class="node" cx="48" cy="-32" r="10"/>
+      <circle class="node" cx="54" cy="30" r="10"/>
+      <circle class="node" cx="-46" cy="28" r="10"/>
+      <!-- Pfade -->
+      <path class="path dash-anim" stroke-dashoffset="0" d="M0 0 L44 -29"/>
+      <path class="path dash-anim" stroke-dashoffset="60" d="M0 0 L50 28"/>
+      <path class="path dash-anim" stroke-dashoffset="120" d="M0 0 L-42 25"/>
+      <!-- Binnen-Symbol (Policy Routing + Richtung) -->
+      <path d="M-6 -4 L6 -4 L6 4 L-6 4 Z" fill="#0f172acc" stroke="#ffffff" stroke-width="1.2" />
+      <path d="M-2 0 L2 0 M0 -2 L0 2" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+    </g>
+
+    <!-- Text -->
+    <g transform="translate(140,58)">
+      <text class="logo-title">ip-rule-operator</text>
+      <text class="logo-sub" y="28">Declarative policy routing for Service ClusterIPs</text>
+    </g>
+
+    <!-- Fußzeile / Tagline klein rechts unten -->
+    <g transform="translate(0,0)">
+      <text class="logo-sub" x="140" y="118" font-size="11">from &lt;clusterIP&gt; lookup &lt;table&gt; [priority]</text>
+    </g>
   </g>
-  <text class="title" x="120" y="50">ip-rule-operator</text>
-  <text class="subtitle" x="120" y="70">Policy Routing for Service IPs</text>
-  <text class="mono" x="120" y="90">from svc lookup table </text>
 </svg>

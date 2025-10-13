@@ -7,7 +7,7 @@ The ip-rule-operator automates Linux *Policy Routing* rules (`ip rule`) for Kube
 - `Service` objects (type *LoadBalancer*)
 - Custom CRD `IPRule` (CIDR -> routing table / priority mapping)
 - Generates internal `IPRuleConfig` resources (desired state per Service IP)
-- An *Agent* DaemonSet applies these `IPRuleConfig` entries as real `ip rule` statements (source = Service ClusterIP) on selected nodes and cleans them up when obsolete.
+- An *Agent* DaemonSet applies these `IPRuleConfig` entries as real `ip rule` statements (source = Service ClusterIP) on selected nodes and cleans them up when obsolete (marks `absent` -> delete CR & kernel rule).
 
 This yields a fully declarative lifecycle for policy routing tied to Kubernetes services.
 
@@ -22,11 +22,12 @@ This yields a fully declarative lifecycle for policy routing tied to Kubernetes 
 7. [OpenShift Notes](#openshift-notes)
 8. [Agent Deployment & Control](#agent-deployment--control)
 9. [Metrics](#metrics)
-10. [Security & Permissions](#security--permissions)
-11. [Development & Contribution](#development--contribution)
-12. [Troubleshooting](#troubleshooting)
-13. [Roadmap / Ideas](#roadmap--ideas)
-14. [License](#license)
+10. [Environment Variables](#environment-variables)
+11. [Security & Permissions](#security--permissions)
+12. [Development & Contribution](#development--contribution)
+13. [Troubleshooting](#troubleshooting)
+14. [Roadmap / Ideas](#roadmap--ideas)
+15. [License](#license)
 
 ---
 ## Use Cases
@@ -71,16 +72,19 @@ Fields:
 - `spec.cidr` (string, e.g. `198.51.100.0/24`) – range of LB VIPs
 - `spec.table` (int) – routing table number
 - `spec.priority` (int, optional) – `ip rule` priority
-- `spec.nodeSelectorLabel` (string) – label expected on nodes processed by the agent (currently user applied; selection is indirect via the Agent's nodeSelector)
+- `spec.nodeSelectorLabel` (string) – (Currently NOT evaluated by the controller; present for future direct per-rule node scoping. Today you scope nodes globally via the `Agent` CR `spec.nodeSelector` only.)
 
 ### IPRuleConfig (cluster-scoped, generated)
 Internal desired state (NOT created by users):
 - `spec.serviceIP` – source IP (Service ClusterIP)
 - `spec.table` – routing table
-- `spec.priority` – priority
+- `spec.priority` – priority (0 = let kernel assign; matching logic uses wildcard to prevent duplicate re-add loops)
 - `spec.state` – `present` | `absent`
 
-Controller marks obsolete entries `absent`; agent removes the kernel rule and deletes the object.
+Lifecycle:
+1. Controller ensures one `IPRuleConfig` per (ClusterIP, table, priority) that is required -> `state=present`.
+2. Removed / outdated tuples are switched to `state=absent` (annotation hash cleared) – no immediate deletion to allow the Agent to observe & remove kernel rule first.
+3. Agent sees `absent`, deletes kernel `ip rule` if still present, then deletes the `IPRuleConfig` object (robust retry). This guarantees idempotent cleanup without thrashing.
 
 ### Agent (namespaced, singleton)
 Controls the agent DaemonSet through a single CR named `default` (enforced by validating webhook).
@@ -98,7 +102,7 @@ Status reports scheduling & readiness plus a hash-triggered rollout state.
 2. Controller watches `Service` (LoadBalancer) objects; for each LB VIP inside a rule's CIDR it generates (ClusterIP, table, priority) tuples.
 3. Creates / updates `IPRuleConfig` with `state=present`; missing entries become `absent`.
 4. Agent lists `IPRuleConfig` objects, ensures kernel rules: `from <ClusterIP> lookup <table> [priority <p>]`.
-5. For `absent` entries agent deletes kernel rule then deletes the CR.
+5. For `absent` entries agent deletes kernel rule then deletes the CR (preventing repeated rule re-additions thanks to wildcard priority tracking).
 
 ---
 ## Examples
@@ -125,7 +129,7 @@ spec:
   cidr: 203.0.113.0/24
   table: 100
   priority: 1000
-  nodeSelectorLabel: iprule.operator.brtrm.dev/enabled
+  nodeSelectorLabel: iprule.operator.brtrm.dev/enabled   # (currently informational only)
 ```
 If the Service gets LB IP `203.0.113.45` and ClusterIP `10.96.23.17` an `IPRuleConfig` is generated and the agent applies:
 ```
@@ -167,7 +171,8 @@ docker buildx build --platform linux/amd64,linux/arm64 -t $AGENT_IMG -f Dockerfi
 ### 2. Install CRDs & controller
 ```bash
 make install
-make deploy IMG=$IMG
+# AGENT_IMG wird in deploy via sed eingesetzt
+make deploy IMG=$IMG AGENT_IMG=$AGENT_IMG
 ```
 
 ### 3. Create Agent CR
@@ -207,14 +212,19 @@ kubectl get ds -n system iprule-agent
 
 ---
 ## OpenShift Notes
-- Requires SCC (see `config/agent/securitycontextconstraints.yaml`).
-- Grant SCC:
+- Agent benötigt Capability `NET_ADMIN` + `hostNetwork: true` (siehe generierten DaemonSet via `Agent` CR). Ein separates SCC YAML liegt aktuell NICHT unter `config/`; für OpenShift musst du ggf. eine SCC erstellen/zuweisen, z.B.:
 ```bash
-oc apply -f config/agent/securitycontextconstraints.yaml
-oc adm policy add-scc-to-user iprule-agent-scc -z iprule-agent -n system
+oc create scc iprule-agent-scc \
+  --allow-host-network \
+  --allow-host-dir-volume-plugin=false \
+  --allow-privileged=false \
+  --cap-add=NET_ADMIN \
+  --read-only-rootfs=false \
+  --groups=system:serviceaccounts:system
+oc adm policy add-scc-to-user iprule-agent-scc -z ip-rule-operator-iprule-agent -n system
 ```
-- Adjust namespace & RBAC if using a different namespace.
-- Metrics endpoint may be TLS protected depending on manager flags.
+- Passen Namespace & ServiceAccount Namen ggf. an.
+- RBAC / ClusterRoles werden über Bundle bereitgestellt.
 
 ---
 ## Agent Deployment & Control
@@ -234,6 +244,7 @@ Operator manages the DaemonSet via the singleton `Agent` CR. Changing `spec.imag
 - `iprule_agent_rules_deleted_total`
 - `iprule_agent_rule_errors_total`
 - `iprule_agent_ipruleconfigs_processed_total`
+- `iprule_agent_ipruleconfigs_deleted_total`   (neu; Anzahl gelöschter CRs mit state=absent)
 - `iprule_agent_desired_rules`
 - `iprule_agent_present_rules`
 - `iprule_agent_absent_rules`
@@ -244,12 +255,20 @@ Probes:
 - `/ready` (readiness, after first successful reconcile)
 
 ---
+## Environment Variables
+Agent Pod supports:
+- `RECONCILE_PERIOD` (default `10s`) – Poll Intervall zum Einlesen der `IPRuleConfig` Objekte / Kernel Regeln.
+- `METRICS_ADDR` (default `:9090`) – Leerer Wert deaktiviert HTTP Server.
+
+Controller (standard controller-runtime Flags/ENV je nach Manager Start, aktuell keine speziellen eigenen ENV).
+
+---
 ## Security & Permissions
-- Minimal capability: `NET_ADMIN` (no full privileged)
-- Requires `hostNetwork: true` (policy routing in host namespace)
-- Cluster-scoped CRDs (IPRule, IPRuleConfig); namespaced Agent CR
-- Validating webhook enforces singleton name `default`
-- Recommended: image signing (cosign), restricted registry access
+- Minimal capability: `NET_ADMIN` (no full privileged) – Container läuft als root (`runAsUser: 0`) wegen netlink Rule Management.
+- `hostNetwork: true` (policy routing needs host namespace) + `DNSPolicy: ClusterFirstWithHostNet`.
+- Cluster-scoped CRDs (IPRule, IPRuleConfig); namespaced Agent CR.
+- Validating webhook enforces singleton name `default`.
+- Recommended: image signing (cosign), restricted registry access.
 
 ---
 ## Development & Contribution
@@ -276,8 +295,10 @@ PRs welcome – please open an issue first for larger features. Style: go fmt + 
 | No `IPRuleConfig` objects | Service lacks LB IP or no CIDR match | Check service: `kubectl get svc -o yaml` |
 | ip rule not applied | Agent not running on node | Label node? DaemonSet pods ready? |
 | Priority ignored | Kernel default priority used | Provide explicit `priority` > 0 |
-| Stale rules remain | Config not marked absent yet | Verify LB IP removed, check controller logs |
-| Multiple Agent CRs | Only first is active | Webhook rejects non-default; list with `kubectl get agent` |
+| Stale rules remain | Agent noch nicht gelaufen / Config nicht `absent` | Warten bis Agent Loop (RECONCILE_PERIOD), Logs prüfen |
+| Rules werden immer wieder neu gesetzt | (Frühere Version) Priority Wildcard fehlte | Update auf aktuelle Version (nutzt Wildcard -1 Schlüssel) |
+| `nodeSelectorLabel` hat keine Wirkung | Feld derzeit ungenutzt | Verwende `Agent.spec.nodeSelector` |
+| Multiple Agent CRs | Only first (lexicographically smallest) is active | Webhook lehnt Nicht-`default` ab; entferne überschüssige CRs |
 | Webhook TLS errors | Missing certs | Integrate cert-manager or accept self-signed for dev |
 
 Logs:
@@ -292,6 +313,7 @@ ip rule list | grep <ClusterIP>
 
 ---
 ## Roadmap / Ideas
+- Direct usage of `spec.nodeSelectorLabel` in rule scoping
 - Configurable reconcile interval via CR
 - Multiple source IP modes (Pod IP sets / Endpoints)
 - VRF integration
