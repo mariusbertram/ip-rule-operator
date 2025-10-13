@@ -4,6 +4,7 @@
 resources:
 - bases/api.operator.brtrm.dev_iprules.yaml
 - bases/api.operator.brtrm.dev_agents.yaml
+- bases/api.operator.brtrm.dev_ipruleconfigs.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

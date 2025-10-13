@@ -385,10 +385,10 @@ catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
 
 .PHONY: build-all
-build-all: docker-build agent-image-build bundle-build catalog-build ## Build all images: manager, agent, bundle, and catalog.
+build-all: docker-build agent-image-build   ## Build all images: manager, agent, bundle, and catalog.
 
 .PHONY: push-all
-push-all: docker-push agent-image-push bundle-push catalog-push ## Push all
+push-all: docker-push agent-image-push bundle bundle-build bundle-push ## Push all
 
 # Options for "packagemanifests".
 ifneq ($(origin FROM_VERSION), undefined)
