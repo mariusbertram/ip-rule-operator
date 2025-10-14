@@ -28,8 +28,6 @@ type IPRuleSpec struct {
 	Priority int `json:"priority,omitempty"`
 	// SubnetTableMappings defines which routing table/priority to use for any LB IP within the given CIDR subnets
 	Cidr string `json:"cidr"`
-	// NodeSelectorLabel is the label to use for selecting nodes to apply the rules to.
-	NodeSelectorLabel string `json:"nodeSelectorLabel"`
 }
 
 // IPRuleStatus defines the observed state of IPRule.
@@ -54,7 +52,6 @@ type IPRule struct {
 }
 
 // +kubebuilder:object:root=true
-
 // IPRuleList contains a list of IPRule.
 type IPRuleList struct {
 	metav1.TypeMeta `json:",inline"`

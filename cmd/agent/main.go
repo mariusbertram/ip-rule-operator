@@ -22,6 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	// neu für koordinierte Löschung
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // ruleEntry represents a desired ip rule from node annotation
@@ -38,6 +41,8 @@ type ruleEntry struct {
 
 const (
 	annotationRulesKey = "iprule.operator.brtrm.dev/ip-rules"
+	// neu: pro Node Ack Annotation
+	annotationCleanupPrefix = "cleanup.iprule.agent.brtrm.dev/" // + <nodeName> => done
 )
 
 var (
@@ -70,6 +75,17 @@ func main() {
 		log.Fatalf("failed to init k8s client: %v", err)
 	}
 
+	// NodeName bestimmen (Downward API env: NODE_NAME oder Hostname)
+	nodeName := getEnvString("NODE_NAME", "")
+	if nodeName == "" {
+		if hn, err := os.Hostname(); err == nil {
+			nodeName = hn
+		}
+	}
+	if nodeName == "" {
+		log.Printf("WARN: NODE_NAME nicht gesetzt; koordinierte Löschung deaktiviert")
+	}
+
 	metricsAddr := getEnvString("METRICS_ADDR", ":9090")
 	if metricsAddr != "" {
 		mux := http.NewServeMux()
@@ -94,13 +110,13 @@ func main() {
 		}()
 	}
 
-	log.Printf("starting iprule-agent (IPRuleConfig mode)")
+	log.Printf("starting iprule-agent (IPRuleConfig mode) on node %s", nodeName)
 
 	ctx := context.Background()
 	interval := getEnvDuration("RECONCILE_PERIOD", 10*time.Second)
 	for {
 		start := time.Now()
-		if err := reconcileOnce(ctx, c); err != nil {
+		if err := reconcileOnce(ctx, c, nodeName); err != nil {
 			log.Printf("reconcile error: %v", err)
 		} else {
 			firstReady.CompareAndSwap(false, true)
@@ -129,7 +145,7 @@ func getEnvDuration(k string, def time.Duration) time.Duration {
 	return d
 }
 
-func reconcileOnce(ctx context.Context, c client.Client) error {
+func reconcileOnce(ctx context.Context, c client.Client, nodeName string) error {
 	// List all IPRuleConfigs (cluster-scoped)
 	cfgList := &apiv1alpha1.IPRuleConfigList{}
 	if err := c.List(ctx, cfgList, &client.ListOptions{}); err != nil {
@@ -188,21 +204,10 @@ func reconcileOnce(ctx context.Context, c client.Client) error {
 			}
 			continue
 		}
-		// absent => delete if present and then remove resource
-		if present {
-			if err := delRuleWithRetry(ruleEntry{IP: ip, Table: table, Priority: prio}); err != nil {
-				metricRuleErrors.Inc()
-				log.Printf("delete rule failed after retries (%s table %d prio %d): %v", ip, table, prio, err)
-			} else {
-				metricRulesDeleted.Inc()
-				log.Printf("deleted ip rule: from %s lookup table %d priority %d", ip, table, prio)
-			}
-		}
-		if err := deleteIPRuleConfigWithRetry(ctx, c, cfg); err != nil {
-			log.Printf("failed deleting IPRuleConfig %s: %v", cfg.Name, err)
-		} else {
-			metricConfigsDeleted.Inc()
-			log.Printf("deleted IPRuleConfig %s (state=absent)", cfg.Name)
+		// state=absent => koordinierte Löschung (Ack pro Node)
+		if err := handleAbsentConfig(ctx, c, cfg, nodeName, present); err != nil {
+			metricRuleErrors.Inc()
+			log.Printf("handleAbsentConfig %s failed: %v", cfg.Name, err)
 		}
 	}
 
@@ -394,4 +399,83 @@ func deleteIPRuleConfigWithRetry(ctx context.Context, c client.Client, cfg *apiv
 		}
 		return nil
 	})
+}
+
+// handleAbsentConfig löscht lokale Rule, setzt Ack-Annotation und löscht CR erst bei vollständigen Acks aller Nodes.
+func handleAbsentConfig(ctx context.Context, c client.Client, cfg *apiv1alpha1.IPRuleConfig, nodeName string, rulePresent bool) error {
+	if nodeName == "" { // keine Koordination möglich
+		return nil
+	}
+	ip := cfg.Spec.ServiceIP
+	table := cfg.Spec.Table
+	prio := cfg.Spec.Priority
+	if rulePresent {
+		if err := delRuleWithRetry(ruleEntry{IP: ip, Table: table, Priority: prio}); err != nil {
+			return fmt.Errorf("delete rule: %w", err)
+		}
+		metricRulesDeleted.Inc()
+		log.Printf("deleted ip rule (absent): from %s lookup table %d priority %d", ip, table, prio)
+	}
+	ackKey := annotationCleanupPrefix + nodeName
+	// Ack setzen (Retry für Konflikte)
+	if err := retry(5, 120*time.Millisecond, func() error {
+		fresh := &apiv1alpha1.IPRuleConfig{}
+		if err := c.Get(ctx, client.ObjectKey{Name: cfg.Name}, fresh); err != nil {
+			if client.IgnoreNotFound(err) == nil { // schon gelöscht
+				return nil
+			}
+			return err
+		}
+		if fresh.Spec.State != "absent" { // zurückgesetzt
+			return nil
+		}
+		if fresh.Annotations == nil {
+			fresh.Annotations = map[string]string{}
+		}
+		if fresh.Annotations[ackKey] == "done" { // bereits ack
+			return nil
+		}
+		fresh.Annotations[ackKey] = "done"
+		if err := c.Update(ctx, fresh); err != nil {
+			if apierrors.IsConflict(err) {
+				return err // retry
+			}
+			return err
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("set ack annotation failed: %w", err)
+	}
+	// Prüfen ob alle Nodes ge-acked haben
+	fresh := &apiv1alpha1.IPRuleConfig{}
+	if err := c.Get(ctx, client.ObjectKey{Name: cfg.Name}, fresh); err != nil {
+		if client.IgnoreNotFound(err) == nil { // weg
+			return nil
+		}
+		return err
+	}
+	if fresh.Spec.State != "absent" {
+		return nil
+	}
+	nodes := &corev1.NodeList{}
+	if err := c.List(ctx, nodes); err != nil {
+		return fmt.Errorf("list nodes: %w", err)
+	}
+	allAck := true
+	for i := range nodes.Items {
+		k := annotationCleanupPrefix + nodes.Items[i].Name
+		if fresh.Annotations == nil || fresh.Annotations[k] != "done" {
+			allAck = false
+			break
+		}
+	}
+	if !allAck {
+		return nil
+	}
+	if err := deleteIPRuleConfigWithRetry(ctx, c, fresh); err != nil {
+		return fmt.Errorf("final delete: %w", err)
+	}
+	metricConfigsDeleted.Inc()
+	log.Printf("deleted IPRuleConfig %s after all node acks", fresh.Name)
+	return nil
 }

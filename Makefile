@@ -228,9 +228,6 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	# Agent Platzhalter ersetzen
-	cp config/manager/manager.yaml config/manager/manager.yaml.orig
-	sed -i.bak "s|__RELATED_AGENT_IMAGE__|$(AGENT_IMG)|g" config/manager/manager.yaml
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 	# Original wiederherstellen
 	mv config/manager/manager.yaml.orig config/manager/manager.yaml

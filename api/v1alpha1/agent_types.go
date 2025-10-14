@@ -18,11 +18,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation/field"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -76,30 +72,4 @@ type AgentList struct {
 
 func init() {
 	SchemeBuilder.Register(&Agent{}, &AgentList{})
-}
-
-// +kubebuilder:webhook:path=/validate-api-operator-brtrm-dev-v1alpha1-agent,mutating=false,failurePolicy=Fail,sideEffects=None,groups=api.operator.brtrm.dev,resources=agents,verbs=create;update,versions=v1alpha1,name=vagent.kb.io,admissionReviewVersions=v1
-
-func (a *Agent) ValidateCreate() error                   { return a.validate() }
-func (a *Agent) ValidateUpdate(old runtime.Object) error { return a.validate() }
-func (a *Agent) ValidateDelete() error                   { return nil }
-
-func (a *Agent) validate() error {
-	var allErrs field.ErrorList
-	if a.Name != "default" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), a.Name, "name must be 'default' (singleton pattern)"))
-	}
-	for k := range a.Spec.NodeSelector {
-		if k == "" {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("nodeSelector"), k, "empty key not allowed"))
-		}
-	}
-	if len(allErrs) == 0 {
-		return nil
-	}
-	return apierrors.NewInvalid(GroupVersion.WithKind("Agent").GroupKind(), a.Name, allErrs)
-}
-
-func (a *Agent) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(a).Complete()
 }

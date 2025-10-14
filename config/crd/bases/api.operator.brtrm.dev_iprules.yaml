@@ -43,10 +43,6 @@ spec:
                 description: SubnetTableMappings defines which routing table/priority
                   to use for any LB IP within the given CIDR subnets
                 type: string
-              nodeSelectorLabel:
-                description: NodeSelectorLabel is the label to use for selecting nodes
-                  to apply the rules to.
-                type: string
               priority:
                 description: Priority is the rule priority used. If 0, a default will
                   be used by the agent
@@ -57,7 +53,6 @@ spec:
                 type: integer
             required:
             - cidr
-            - nodeSelectorLabel
             - table
             type: object
           status:

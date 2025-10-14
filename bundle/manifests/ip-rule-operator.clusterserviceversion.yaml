@@ -187,7 +187,7 @@ spec:
                     command:
                       - /manager
                     env:
-                      - name: RELATED_IMAGE_IPRULE_AGENT
+                      - name: AGENT_IMAGE
                         value: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
                     image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
                     livenessProbe:
