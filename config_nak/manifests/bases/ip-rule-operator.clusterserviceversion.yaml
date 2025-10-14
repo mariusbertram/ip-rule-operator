@@ -1,0 +1,59 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    features.operators.openshift.io/disconnected: "true"
+  name: ip-rule-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Agent is the Schema for the agents API.
+      displayName: Agent
+      kind: Agent
+      name: agents.api.operator.brtrm.dev
+      version: v1alpha1
+    - description: IPRule is the Schema for the iprules API.
+      displayName: IPRule
+      kind: IPRule
+      name: iprules.api.operator.brtrm.dev
+      version: v1alpha1
+  description: The ip-rule-operator automates Linux Policy Routing rules (ip rule)
+    for Kubernetes / OpenShift clusters based on Service LoadBalancer IPs and declarative
+    routing table mappings.
+  displayName: iprules-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - Network
+  links:
+  - name: Ip Rule Operator
+    url: https://github.com/mariusbertram/ip-rule-operator
+  maintainers:
+  - email: marius@brtrm.de
+    name: mariusbertram
+  maturity: alpha
+  provider:
+    name: Marius Bertram
+    url: https://github.com/mariusbertram/ip-rule-operator
+  relatedImages:
+  - image: ghcr.io/mariusbertram/iprule-agent:latest
+    name: AGENT_IMAGE
+  version: 0.0.0
