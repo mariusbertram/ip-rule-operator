@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: ip-rule-operator
-  name: ip-rule-operator-agent-editor-role
+  name: agent-editor-role
 rules:
 - apiGroups:
   - api.operator.brtrm.dev

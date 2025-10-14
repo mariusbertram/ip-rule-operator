@@ -1,0 +1,30 @@
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: iprule-agent-scc
+allowHostNetwork: true
+allowHostPID:  true
+allowHostPorts: true
+allowHostIPC: false
+allowPrivilegedContainer: true
+allowPrivilegeEscalation: false
+requiredDropCapabilities: []
+allowedCapabilities:
+  - NET_ADMIN
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: MustRunAs
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+volumes:
+  - configMap
+  - projected
+  - downwardAPI
+  - emptyDir
+  - secret
+users: [] # Leer lassen; via oc adm policy add-scc-to-user binden
+readOnlyRootFilesystem: false
+

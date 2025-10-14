@@ -1,10 +1,11 @@
 apiVersion: api.operator.brtrm.dev/v1alpha1
-kind: Agent
+kind: IPRule
 metadata:
   labels:
     app.kubernetes.io/name: ip-rule-operator
     app.kubernetes.io/managed-by: kustomize
-  name: agent-sample
+  name: iprule-sample
 spec:
-  nodeselector:
-    kubernetes.io/os: linux
+  table: 254
+  cidr: 10.0.0.0/24
+  nodeSelectorLabel: node-role.kubernetes.io/master

@@ -317,10 +317,9 @@ fbc-dev-validate: fbc-dev opm ## Validate dev FBC directory
 .PHONY: fbc-dev-image
 fbc-dev-image: fbc-dev-validate ## Build dev FBC image
 	@echo "[FBC] Generating Dockerfile for dev FBC"
-	$(OPM) generate dockerfile $(FBC_DEV_DIR)/
-	$(CONTAINER_TOOL) build -f $(FBC_DEV_DIR).Dockerfile -t $(FBC_IMG) $(FBC_DEV_DIR)/..
+	$(OPM) generate dockerfile $(FBC_DEV_DIR)
+	$(CONTAINER_TOOL) build -f $(FBC_DEV_DIR)/Dockerfile -t $(FBC_IMG) $(FBC_DEV_DIR)
 	@echo "[FBC] Built image $(FBC_IMG)"
-	rm -f $(FBC_DEV_DIR).Dockerfile || true
 
 .PHONY: fbc-dev-push
 fbc-dev-push: fbc-dev-image ## Push dev FBC image

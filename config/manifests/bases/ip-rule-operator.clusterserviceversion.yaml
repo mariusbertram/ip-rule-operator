@@ -4,7 +4,6 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
-    features.operators.openshift.io/disconnected: "true"
   name: ip-rule-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -21,10 +20,8 @@ spec:
       kind: IPRule
       name: iprules.api.operator.brtrm.dev
       version: v1alpha1
-  description: The ip-rule-operator automates Linux Policy Routing rules (ip rule)
-    for Kubernetes / OpenShift clusters based on Service LoadBalancer IPs and declarative
-    routing table mappings.
-  displayName: iprules-operator
+  description: ip-rule-operator
+  displayName: ip-rule-operator
   icon:
   - base64data: ""
     mediatype: ""
@@ -45,10 +42,10 @@ spec:
   - Network
   links:
   - name: Ip Rule Operator
-    url: https://github.com/mariusbertram/ip-rule-operator
+    url: https://ip-rule-operator.domain
   maintainers:
   - email: marius@brtrm.de
-    name: mariusbertram
+    name: Marius Bertram
   maturity: alpha
   provider:
     name: Marius Bertram

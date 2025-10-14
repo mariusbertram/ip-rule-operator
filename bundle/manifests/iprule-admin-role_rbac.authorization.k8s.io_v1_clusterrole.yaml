@@ -5,16 +5,14 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: ip-rule-operator
-  name: ip-rule-operator-iprule-viewer-role
+  name: iprule-admin-role
 rules:
 - apiGroups:
   - api.operator.brtrm.dev
   resources:
   - iprules
   verbs:
-  - get
-  - list
-  - watch
+  - '*'
 - apiGroups:
   - api.operator.brtrm.dev
   resources:

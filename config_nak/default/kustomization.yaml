@@ -1,0 +1,7 @@
+# Adds namespace to all resources.
+namespace: ip-rule-operator
+#namePrefix: ip-rule-operator-
+resources:
+- ../crd
+- ../rbac
+- ../manager

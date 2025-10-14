@@ -5,23 +5,17 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: ip-rule-operator
-  name: ip-rule-operator-iprule-editor-role
+  name: agent-admin-role
 rules:
 - apiGroups:
   - api.operator.brtrm.dev
   resources:
-  - iprules
+  - agents
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - '*'
 - apiGroups:
   - api.operator.brtrm.dev
   resources:
-  - iprules/status
+  - agents/status
   verbs:
   - get

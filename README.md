@@ -142,7 +142,7 @@ apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
   name: default
-  namespace: system
+  namespace: ip-rule-operator
 spec:
   image: my-registry/iprule-agent:v1.0.0
   nodeSelector:
@@ -183,7 +183,7 @@ apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
   name: default
-  namespace: system
+  namespace: ip-rule-operator
 spec:
   nodeSelector:
     iprule.operator.brtrm.dev/enabled: "true"

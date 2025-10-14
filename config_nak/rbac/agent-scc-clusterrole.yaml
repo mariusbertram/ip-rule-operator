@@ -2,12 +2,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: iprule-agent-scc-role
+  name: iprule-agent-scc
 rules:
   - apiGroups:
       - security.openshift.io
     resourceNames:
-      - iprule-agent-scc
+      - ip-rule-operator-iprule-agent-scc
     resources:
       - securitycontextconstraints
     verbs:

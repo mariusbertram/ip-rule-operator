@@ -14,7 +14,11 @@ metadata:
             },
             "name": "agent-sample"
           },
-          "spec": {}
+          "spec": {
+            "nodeselector": {
+              "kubernetes.io/os": "linux"
+            }
+          }
         },
         {
           "apiVersion": "api.operator.brtrm.dev/v1alpha1",
@@ -28,14 +32,12 @@ metadata:
           },
           "spec": {
             "cidr": "10.0.0.0/24",
-            "nodeSelectorLabel": "node-role.kubernetes.io/master",
             "table": 254
           }
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-10-14T11:22:39Z"
-    features.operators.openshift.io/disconnected: "true"
+    createdAt: "2025-10-14T19:56:48Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1
@@ -57,8 +59,8 @@ spec:
         kind: IPRule
         name: iprules.api.operator.brtrm.dev
         version: v1alpha1
-  description: The ip-rule-operator automates Linux Policy Routing rules (ip rule) for Kubernetes / OpenShift clusters based on Service LoadBalancer IPs and declarative routing table mappings.
-  displayName: iprules-operator
+  description: ip-rule-operator
+  displayName: ip-rule-operator
   icon:
     - base64data: ""
       mediatype: ""
@@ -160,13 +162,44 @@ spec:
                 - subjectaccessreviews
               verbs:
                 - create
-          serviceAccountName: ip-rule-operator-controller-manager
+          serviceAccountName: controller-manager
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - nodes
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - ipruleconfigs
+                - iprules
+              verbs:
+                - '*'
+            - apiGroups:
+                - apps/v1
+              resources:
+                - daemonsets/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - security.openshift.io
+              resourceNames:
+                - iprule-agent-scc
+              resources:
+                - securitycontextconstraints
+              verbs:
+                - use
+          serviceAccountName: iprule-agent
       deployments:
         - label:
             app.kubernetes.io/managed-by: kustomize
             app.kubernetes.io/name: ip-rule-operator
             control-plane: controller-manager
-          name: ip-rule-operator-controller-manager
+          name: controller-manager
           spec:
             replicas: 1
             selector:
@@ -184,14 +217,13 @@ spec:
               spec:
                 containers:
                   - args:
-                      - --metrics-bind-address=:8443
                       - --leader-elect
                       - --health-probe-bind-address=:8081
                     command:
                       - /manager
                     env:
-                      - name: AGENT_IMAGE
-                        value: ghcr.io/mariusbertram/iprule-agent:latest
+                      - name: RELATED_IMAGE_AGENT_IMAGE
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
                     image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
                     livenessProbe:
                       httpGet:
@@ -222,7 +254,7 @@ spec:
                   runAsNonRoot: true
                   seccompProfile:
                     type: RuntimeDefault
-                serviceAccountName: ip-rule-operator-controller-manager
+                serviceAccountName: controller-manager
                 terminationGracePeriodSeconds: 10
       permissions:
         - rules:
@@ -257,7 +289,7 @@ spec:
               verbs:
                 - create
                 - patch
-          serviceAccountName: ip-rule-operator-controller-manager
+          serviceAccountName: controller-manager
     strategy: deployment
   installModes:
     - supported: false
@@ -272,15 +304,19 @@ spec:
     - Network
   links:
     - name: Ip Rule Operator
-      url: https://github.com/mariusbertram/ip-rule-operator
+      url: https://ip-rule-operator.domain
   maintainers:
     - email: marius@brtrm.de
-      name: mariusbertram
+      name: Marius Bertram
   maturity: alpha
   provider:
     name: Marius Bertram
     url: https://github.com/mariusbertram/ip-rule-operator
   relatedImages:
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
+      name: agent-image
     - image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
       name: manager
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
+      name: agent_image
   version: 0.0.1
