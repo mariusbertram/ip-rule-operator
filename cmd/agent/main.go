@@ -19,12 +19,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vishvananda/netlink"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	// neu für koordinierte Löschung
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // ruleEntry represents a desired ip rule from node annotation
@@ -40,25 +39,88 @@ type ruleEntry struct {
 }
 
 const (
-	annotationRulesKey = "iprule.operator.brtrm.dev/ip-rules"
-	// neu: pro Node Ack Annotation
-	annotationCleanupPrefix = "cleanup.iprule.agent.brtrm.dev/" // + <nodeName> => done
+	// Ack Annotation Prefix pro Node
+	annotationCleanupPrefix = "cleanup.iprule.agent.brtrm.dev/" // + <nodeName>
+	ackValueDone            = "done"
 )
 
 var (
-	metricRulesAdded        = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "rules_added_total", Help: "Number of ip rules successfully added"})
-	metricRulesDeleted      = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "rules_deleted_total", Help: "Number of ip rules successfully deleted"})
-	metricRuleErrors        = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "rule_errors_total", Help: "Errors while adding/deleting rules"})
-	metricConfigsProcessed  = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "ipruleconfigs_processed_total", Help: "Processed IPRuleConfig objects"})
-	metricConfigsDeleted    = prometheus.NewCounter(prometheus.CounterOpts{Namespace: "iprule_agent", Name: "ipruleconfigs_deleted_total", Help: "IPRuleConfig objects deleted (state=absent)"})
-	metricDesiredGauge      = prometheus.NewGauge(prometheus.GaugeOpts{Namespace: "iprule_agent", Name: "desired_rules", Help: "Desired (present) rules"})
-	metricPresentGauge      = prometheus.NewGauge(prometheus.GaugeOpts{Namespace: "iprule_agent", Name: "present_rules", Help: "Already existing rules"})
-	metricAbsentGauge       = prometheus.NewGauge(prometheus.GaugeOpts{Namespace: "iprule_agent", Name: "absent_rules", Help: "Rules marked absent (configs)"})
-	metricReconcileDuration = prometheus.NewHistogram(prometheus.HistogramOpts{Namespace: "iprule_agent", Name: "reconcile_duration_seconds", Help: "Duration of a reconcile loop", Buckets: prometheus.ExponentialBuckets(0.005, 2, 12)})
+	metricRulesAdded = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "iprule_agent",
+			Name:      "rules_added_total",
+			Help:      "Number of ip rules successfully added",
+		},
+	)
+	metricRulesDeleted = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "iprule_agent",
+			Name:      "rules_deleted_total",
+			Help:      "Number of ip rules successfully deleted",
+		},
+	)
+	metricRuleErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "iprule_agent",
+			Name:      "rule_errors_total",
+			Help:      "Errors while adding/deleting rules",
+		},
+	)
+	metricConfigsProcessed = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "iprule_agent",
+			Name:      "ipruleconfigs_processed_total",
+			Help:      "Processed IPRuleConfig objects",
+		},
+	)
+	metricConfigsDeleted = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "iprule_agent",
+			Name:      "ipruleconfigs_deleted_total",
+			Help:      "IPRuleConfig objects deleted (state=absent)",
+		},
+	)
+	metricDesiredGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "iprule_agent",
+			Name:      "desired_rules",
+			Help:      "Desired (present) rules",
+		},
+	)
+	metricPresentGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "iprule_agent",
+			Name:      "present_rules",
+			Help:      "Already existing rules",
+		},
+	)
+	metricAbsentGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "iprule_agent",
+			Name:      "absent_rules",
+			Help:      "Rules marked absent (configs)",
+		},
+	)
+	metricReconcileDuration = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Namespace: "iprule_agent",
+			Name:      "reconcile_duration_seconds",
+			Help:      "Duration of a reconcile loop",
+			Buckets:   prometheus.ExponentialBuckets(0.005, 2, 12),
+		},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(metricRulesAdded, metricRulesDeleted, metricRuleErrors, metricConfigsProcessed, metricConfigsDeleted, metricDesiredGauge, metricPresentGauge, metricAbsentGauge, metricReconcileDuration)
+	prometheus.MustRegister(metricRulesAdded)
+	prometheus.MustRegister(metricRulesDeleted)
+	prometheus.MustRegister(metricRuleErrors)
+	prometheus.MustRegister(metricConfigsProcessed)
+	prometheus.MustRegister(metricConfigsDeleted)
+	prometheus.MustRegister(metricDesiredGauge)
+	prometheus.MustRegister(metricPresentGauge)
+	prometheus.MustRegister(metricAbsentGauge)
+	prometheus.MustRegister(metricReconcileDuration)
 }
 
 var firstReady atomic.Bool
@@ -160,7 +222,7 @@ func reconcileOnce(ctx context.Context, c client.Client, nodeName string) error 
 		if cfg.Labels["managed-by"] != "ip-rule-operator" {
 			continue
 		}
-		if cfg.Spec.State == "absent" {
+		if cfg.Spec.State == apiv1alpha1.StateAbsent {
 			absentCount++
 		}
 		filtered = append(filtered, cfg)
@@ -190,7 +252,7 @@ func reconcileOnce(ctx context.Context, c client.Client, nodeName string) error 
 			present = ruleIndex[ruleKey(ip, table, 0)] || ruleIndex[ruleKey(ip, table, -1)]
 		}
 
-		if cfg.Spec.State == "present" {
+		if cfg.Spec.State == apiv1alpha1.StatePresent { // present
 			desiredPresent++
 			if present {
 				continue
@@ -204,7 +266,7 @@ func reconcileOnce(ctx context.Context, c client.Client, nodeName string) error 
 			}
 			continue
 		}
-		// state=absent => koordinierte Löschung (Ack pro Node)
+		// state=absent => koordinierte Löschung
 		if err := handleAbsentConfig(ctx, c, cfg, nodeName, present); err != nil {
 			metricRuleErrors.Inc()
 			log.Printf("handleAbsentConfig %s failed: %v", cfg.Name, err)
@@ -274,32 +336,6 @@ func retry(attempts int, baseDelay time.Duration, fn func() error) error {
 	return err
 }
 
-func rulePresent(r ruleEntry) (bool, error) {
-	ipNet, err := ipToNet(r.IP)
-	if err != nil {
-		return false, err
-	}
-	rules, err := netlink.RuleList(netlink.FAMILY_ALL)
-	if err != nil {
-		return false, fmt.Errorf("list rules: %w", err)
-	}
-	for _, rl := range rules {
-		if rl.Table != r.Table {
-			continue
-		}
-		if r.Priority > 0 && rl.Priority != r.Priority {
-			continue
-		}
-		if rl.Src == nil {
-			continue
-		}
-		if rl.Src.IP.Equal(ipNet.IP) && bytesEqualMask(rl.Src.Mask, ipNet.Mask) {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func addRule(r ruleEntry) error {
 	ipNet, err := ipToNet(r.IP)
 	if err != nil {
@@ -367,18 +403,6 @@ func ipToNet(ipStr string) (*net.IPNet, error) {
 	return &net.IPNet{IP: ip, Mask: net.CIDRMask(128, 128)}, nil
 }
 
-func bytesEqualMask(a, b net.IPMask) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 // deleteIPRuleConfigWithRetry löscht ein IPRuleConfig Objekt robust (Konflikte/NotFound tolerant)
 func deleteIPRuleConfigWithRetry(ctx context.Context, c client.Client, cfg *apiv1alpha1.IPRuleConfig) error {
 	return retry(3, 100*time.Millisecond, func() error {
@@ -401,9 +425,18 @@ func deleteIPRuleConfigWithRetry(ctx context.Context, c client.Client, cfg *apiv
 	})
 }
 
-// handleAbsentConfig löscht lokale Rule, setzt Ack-Annotation und löscht CR erst bei vollständigen Acks aller Nodes.
-func handleAbsentConfig(ctx context.Context, c client.Client, cfg *apiv1alpha1.IPRuleConfig, nodeName string, rulePresent bool) error {
-	if nodeName == "" { // keine Koordination möglich
+// handleAbsentConfig löscht lokale Rule, setzt Ack-Annotation und löscht CR erst wenn alle Nodes bestätigt haben.
+func handleAbsentConfig(
+	ctx context.Context,
+	c client.Client,
+	cfg *apiv1alpha1.IPRuleConfig,
+	nodeName string,
+	rulePresent bool,
+) error {
+	if nodeName == "" { // no coordination possible without node name
+		return nil
+	}
+	if cfg.Spec.State != apiv1alpha1.StateAbsent { // nur absent behandeln
 		return nil
 	}
 	ip := cfg.Spec.ServiceIP
@@ -417,7 +450,7 @@ func handleAbsentConfig(ctx context.Context, c client.Client, cfg *apiv1alpha1.I
 		log.Printf("deleted ip rule (absent): from %s lookup table %d priority %d", ip, table, prio)
 	}
 	ackKey := annotationCleanupPrefix + nodeName
-	// Ack setzen (Retry für Konflikte)
+	// Ack setzen (mit Retry für Konflikte)
 	if err := retry(5, 120*time.Millisecond, func() error {
 		fresh := &apiv1alpha1.IPRuleConfig{}
 		if err := c.Get(ctx, client.ObjectKey{Name: cfg.Name}, fresh); err != nil {
@@ -426,19 +459,19 @@ func handleAbsentConfig(ctx context.Context, c client.Client, cfg *apiv1alpha1.I
 			}
 			return err
 		}
-		if fresh.Spec.State != "absent" { // zurückgesetzt
+		if fresh.Spec.State != apiv1alpha1.StateAbsent { // wieder aktiv
 			return nil
 		}
 		if fresh.Annotations == nil {
 			fresh.Annotations = map[string]string{}
 		}
-		if fresh.Annotations[ackKey] == "done" { // bereits ack
+		if fresh.Annotations[ackKey] == ackValueDone { // bereits ack
 			return nil
 		}
-		fresh.Annotations[ackKey] = "done"
+		fresh.Annotations[ackKey] = ackValueDone
 		if err := c.Update(ctx, fresh); err != nil {
-			if apierrors.IsConflict(err) {
-				return err // retry
+			if apierrors.IsConflict(err) { // retry
+				return err
 			}
 			return err
 		}
@@ -449,12 +482,12 @@ func handleAbsentConfig(ctx context.Context, c client.Client, cfg *apiv1alpha1.I
 	// Prüfen ob alle Nodes ge-acked haben
 	fresh := &apiv1alpha1.IPRuleConfig{}
 	if err := c.Get(ctx, client.ObjectKey{Name: cfg.Name}, fresh); err != nil {
-		if client.IgnoreNotFound(err) == nil { // weg
+		if client.IgnoreNotFound(err) == nil { // schon gelöscht
 			return nil
 		}
 		return err
 	}
-	if fresh.Spec.State != "absent" {
+	if fresh.Spec.State != apiv1alpha1.StateAbsent { // resurrected
 		return nil
 	}
 	nodes := &corev1.NodeList{}
@@ -464,7 +497,7 @@ func handleAbsentConfig(ctx context.Context, c client.Client, cfg *apiv1alpha1.I
 	allAck := true
 	for i := range nodes.Items {
 		k := annotationCleanupPrefix + nodes.Items[i].Name
-		if fresh.Annotations == nil || fresh.Annotations[k] != "done" {
+		if fresh.Annotations == nil || fresh.Annotations[k] != ackValueDone {
 			allAck = false
 			break
 		}

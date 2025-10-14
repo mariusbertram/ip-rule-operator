@@ -23,12 +23,18 @@ import (
 // IPRuleSpec defines the desired state of IPRule.
 type IPRuleSpec struct {
 	// Table is the routing table number to use for created rules. If 0, a default will be used by the agent
-	Table int `json:"table,default=254"`
+	Table int `json:"table"`
 	// Priority is the rule priority used. If 0, a default will be used by the agent
 	Priority int `json:"priority,omitempty"`
 	// SubnetTableMappings defines which routing table/priority to use for any LB IP within the given CIDR subnets
 	Cidr string `json:"cidr"`
 }
+
+// State constants for IPRuleConfig.Spec.State
+const (
+	StatePresent = "present"
+	StateAbsent  = "absent"
+)
 
 // IPRuleStatus defines the observed state of IPRule.
 type IPRuleStatus struct {

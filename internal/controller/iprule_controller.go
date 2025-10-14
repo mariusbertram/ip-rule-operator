@@ -57,126 +57,135 @@ type IPRuleReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=daemonsets/finalizers,verbs=get;create;update;delete
 // +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=ipruleconfigs,verbs=get;list;watch;create;update;patch;delete
 
-func (r *IPRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// ipRuleEntry desired config candidate
+type ipRuleEntry struct {
+	IP        netip.Addr
+	Table     int
+	Priority  int
+	Owner     *apiv1alpha1.IPRule
+	PrefixLen int
+}
+
+func (r *IPRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { // lint: reduce complexity by delegating
 	log := logf.FromContext(ctx)
 
-	// Fetch the IPRule instance
 	ipRules := &apiv1alpha1.IPRuleList{}
 	if err := r.List(ctx, ipRules); err != nil {
-		// If the resource no longer exists, nothing to do
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// List all Services across the cluster
-	svcList := &corev1.ServiceList{}
-	if err := r.List(ctx, svcList, &client.ListOptions{}); err != nil {
+	svcIPSet, err := r.collectServiceVIPs(ctx)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Collect LoadBalancer IPs
+	entryMap := r.buildDesiredEntryMap(ipRules, svcIPSet)
+	created, updated, unchanged, err := r.applyDesiredConfigs(ctx, entryMap)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	absentTotal, newlyAbsent := r.markAbsent(ctx, entryMap)
+	metricDesiredGauge.Set(float64(len(entryMap)))
+	metricAbsentGauge.Set(float64(absentTotal))
+
+	log.Info("finished reconciling ip rule configs",
+		"desired", len(entryMap),
+		"created", created,
+		"updated", updated,
+		"unchanged", unchanged,
+		"newlyAbsent", newlyAbsent,
+		"absentTotal", absentTotal,
+	)
+	return ctrl.Result{}, nil
+}
+
+func (r *IPRuleReconciler) collectServiceVIPs(ctx context.Context) (map[netip.Addr][]netip.Addr, error) {
+	svcList := &corev1.ServiceList{}
+	if err := r.List(ctx, svcList, &client.ListOptions{}); err != nil {
+		return nil, err
+	}
 	svcIPSet := map[netip.Addr][]netip.Addr{}
 	for _, svc := range svcList.Items {
 		for _, ing := range svc.Status.LoadBalancer.Ingress {
-			if ing.IP != "" {
-				clusterIP, _ := netip.ParseAddr(svc.Spec.ClusterIP)
-				// Skip if ClusterIP is invalid
-				if !clusterIP.IsValid() {
-					continue
-				}
-				// Parse LoadBalancer IP
-				svcVIP, _ := netip.ParseAddr(ing.IP)
-				// Skip if LoadBalancer IP is invalid
-				if !svcVIP.IsValid() {
-					continue
-				}
-				svcIPSet[clusterIP] = append(svcIPSet[clusterIP], svcVIP)
+			if ing.IP == "" {
+				continue
 			}
+			clusterIP, _ := netip.ParseAddr(svc.Spec.ClusterIP)
+			if !clusterIP.IsValid() {
+				continue
+			}
+			svcVIP, _ := netip.ParseAddr(ing.IP)
+			if !svcVIP.IsValid() {
+				continue
+			}
+			svcIPSet[clusterIP] = append(svcIPSet[clusterIP], svcVIP)
 		}
 	}
-	log.Info("collected LoadBalancer IPs", "svcIPSet", svcIPSet)
-	// Build per-IP rule entries based on subnet-to-table mappings
-	type ipRuleEntry struct {
-		IP        netip.Addr
-		Table     int
-		Priority  int
-		Owner     *apiv1alpha1.IPRule // selected IPRule (most specific CIDR)
-		PrefixLen int
-	}
+	return svcIPSet, nil
+}
 
-	// De-duplicate by key: serviceIP|table|priority choosing the most specific CIDR (longest prefix)
+func (r *IPRuleReconciler) buildDesiredEntryMap(ipRules *apiv1alpha1.IPRuleList, svcIPSet map[netip.Addr][]netip.Addr) map[string]ipRuleEntry {
 	entryMap := map[string]ipRuleEntry{}
-
 	for clusterIP, lbIPs := range svcIPSet {
 		for _, lbIP := range lbIPs {
 			for i := range ipRules.Items {
 				rule := &ipRules.Items[i]
 				cidr, _ := netip.ParsePrefix(rule.Spec.Cidr)
-				if !cidr.IsValid() {
+				if !cidr.IsValid() || !cidr.Contains(lbIP) {
 					continue
 				}
-				if cidr.Contains(lbIP) {
-					entry := ipRuleEntry{IP: clusterIP, Table: rule.Spec.Table, Priority: rule.Spec.Priority, Owner: rule, PrefixLen: cidr.Bits()}
-					key := entry.IP.String() + "|" + strconv.Itoa(entry.Table) + "|" + strconv.Itoa(entry.Priority)
-					if existing, ok := entryMap[key]; ok {
-						// choose most specific (greater prefix length)
-						if entry.PrefixLen > existing.PrefixLen {
-							entryMap[key] = entry
-						}
-					} else {
+				entry := ipRuleEntry{IP: clusterIP, Table: rule.Spec.Table, Priority: rule.Spec.Priority, Owner: rule, PrefixLen: cidr.Bits()}
+				key := entry.IP.String() + "|" + strconv.Itoa(entry.Table) + "|" + strconv.Itoa(entry.Priority)
+				if existing, ok := entryMap[key]; ok {
+					if entry.PrefixLen > existing.PrefixLen { // most specific
 						entryMap[key] = entry
 					}
+				} else {
+					entryMap[key] = entry
 				}
 			}
 		}
 	}
+	return entryMap
+}
 
-	var created, updated, unchanged int
-
+func (r *IPRuleReconciler) applyDesiredConfigs(ctx context.Context, entryMap map[string]ipRuleEntry) (created, updated, unchanged int, err error) {
 	const (
 		labelManagedBy      = "managed-by"
 		labelManagedByValue = "ip-rule-operator"
 		annotationSpecHash  = "iprule.operator.brtrm.dev/spec-hash"
 	)
-
-	// Create / update IPRuleConfig objects
 	for _, e := range entryMap {
 		name := "iprc-" + strings.ReplaceAll(e.IP.String(), ".", "-")
 		cfg := &apiv1alpha1.IPRuleConfig{}
-		err := r.Get(ctx, types.NamespacedName{Name: name}, cfg)
-		if k8serrors.IsNotFound(err) {
+		errGet := r.Get(ctx, types.NamespacedName{Name: name}, cfg)
+		if k8serrors.IsNotFound(errGet) {
 			cfg = &apiv1alpha1.IPRuleConfig{TypeMeta: metav1.TypeMeta{APIVersion: "api.operator.brtrm.dev/v1alpha1", Kind: "IPRuleConfig"}}
 			cfg.SetName(name)
-		} else if err != nil {
-			return ctrl.Result{}, err
+		} else if errGet != nil {
+			return created, updated, unchanged, errGet
 		}
-
-		desiredState := "present"
+		desiredState := apiv1alpha1.StatePresent
 		desiredHash := func() string {
 			data := fmt.Sprintf("table=%d|priority=%d|serviceIP=%s|state=%s", e.Table, e.Priority, e.IP.String(), desiredState)
 			sum := sha256.Sum256([]byte(data))
 			return hex.EncodeToString(sum[:])
 		}()
-
-		// Mutate function for CreateOrUpdate
 		mutateFn := func() error {
 			if cfg.Labels == nil {
 				cfg.Labels = map[string]string{}
 			}
 			cfg.Labels[labelManagedBy] = labelManagedByValue
-
-			// Set most specific owner reference (if present)
 			if e.Owner != nil {
 				_ = controllerutil.SetControllerReference(e.Owner, cfg, r.Scheme)
 			}
-
-			// If hash matches -> skip spec mutation (avoid needless updates)
 			if cfg.Annotations != nil {
 				if h, ok := cfg.Annotations[annotationSpecHash]; ok && h == desiredHash {
 					unchanged++
 					return nil
 				}
 			}
-
 			cfg.Spec.Table = e.Table
 			cfg.Spec.Priority = e.Priority
 			cfg.Spec.ServiceIP = e.IP.String()
@@ -187,10 +196,9 @@ func (r *IPRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			cfg.Annotations[annotationSpecHash] = desiredHash
 			return nil
 		}
-
-		result, err := controllerutil.CreateOrUpdate(ctx, r.Client, cfg, mutateFn)
-		if err != nil {
-			return ctrl.Result{}, err
+		result, errCU := controllerutil.CreateOrUpdate(ctx, r.Client, cfg, mutateFn)
+		if errCU != nil {
+			return created, updated, unchanged, errCU
 		}
 		switch result {
 		case controllerutil.OperationResultCreated:
@@ -199,57 +207,48 @@ func (r *IPRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		case controllerutil.OperationResultUpdated:
 			updated++
 			metricConfigUpdate.Inc()
-		default:
-			// none
 		}
-		log.Info("reconciled IPRuleConfig", "name", cfg.Name, "op", result, "table", cfg.Spec.Table, "priority", cfg.Spec.Priority, "serviceIP", cfg.Spec.ServiceIP)
 	}
+	return created, updated, unchanged, nil
+}
 
-	// Prune: find existing IPRuleConfigs and mark those no longer needed as absent
+func (r *IPRuleReconciler) markAbsent(ctx context.Context, entryMap map[string]ipRuleEntry) (absentTotal, newlyAbsent int) {
+	const (
+		labelManagedBy      = "managed-by"
+		labelManagedByValue = "ip-rule-operator"
+		annotationSpecHash  = "iprule.operator.brtrm.dev/spec-hash"
+	)
 	existingCfgs := &apiv1alpha1.IPRuleConfigList{}
-	var newlyAbsent int
-	if err := r.List(ctx, existingCfgs, &client.ListOptions{}); err == nil {
-		for i := range existingCfgs.Items {
-			cfg := &existingCfgs.Items[i]
-			if cfg.Labels[labelManagedBy] != labelManagedByValue {
-				continue
-			}
-			k := cfg.Spec.ServiceIP + "|" + strconv.Itoa(cfg.Spec.Table) + "|" + strconv.Itoa(cfg.Spec.Priority)
-			if _, ok := entryMap[k]; !ok {
-				if cfg.Spec.State != "absent" {
-					orig := cfg.DeepCopy()
-					cfg.Spec.State = "absent"
-					if cfg.Annotations != nil {
-						delete(cfg.Annotations, annotationSpecHash)
-					}
-					if err := r.Patch(ctx, cfg, client.MergeFrom(orig)); err != nil {
-						log.Error(err, "failed to mark IPRuleConfig absent", "name", cfg.Name)
-					} else {
-						log.Info("marked IPRuleConfig absent", "name", cfg.Name)
-						newlyAbsent++
-						metricConfigMarkedAbsent.Inc()
-					}
+	if err := r.List(ctx, existingCfgs, &client.ListOptions{}); err != nil {
+		logf.FromContext(ctx).Error(err, "failed listing existing IPRuleConfigs for prune")
+		return 0, 0
+	}
+	for i := range existingCfgs.Items {
+		cfg := &existingCfgs.Items[i]
+		if cfg.Labels[labelManagedBy] != labelManagedByValue {
+			continue
+		}
+		k := cfg.Spec.ServiceIP + "|" + strconv.Itoa(cfg.Spec.Table) + "|" + strconv.Itoa(cfg.Spec.Priority)
+		if _, ok := entryMap[k]; !ok {
+			if cfg.Spec.State != apiv1alpha1.StateAbsent {
+				orig := cfg.DeepCopy()
+				cfg.Spec.State = apiv1alpha1.StateAbsent
+				if cfg.Annotations != nil {
+					delete(cfg.Annotations, annotationSpecHash)
+				}
+				if err := r.Patch(ctx, cfg, client.MergeFrom(orig)); err != nil {
+					logf.FromContext(ctx).Error(err, "failed to mark IPRuleConfig absent", "name", cfg.Name)
+				} else {
+					newlyAbsent++
+					metricConfigMarkedAbsent.Inc()
 				}
 			}
 		}
-	} else {
-		log.Error(err, "failed listing existing IPRuleConfigs for prune")
-	}
-
-	// Update metrics
-	metricDesiredGauge.Set(float64(len(entryMap)))
-	// Count absent
-	absentCount := 0
-	for i := range existingCfgs.Items {
-		if existingCfgs.Items[i].Labels[labelManagedBy] == labelManagedByValue && existingCfgs.Items[i].Spec.State == "absent" {
-			absentCount++
+		if cfg.Spec.State == apiv1alpha1.StateAbsent {
+			absentTotal++
 		}
 	}
-	metricAbsentGauge.Set(float64(absentCount))
-
-	log.Info("finished reconciling ip rule configs", "desired", len(entryMap), "created", created, "updated", updated, "unchanged", unchanged, "newlyAbsent", newlyAbsent, "absentTotal", absentCount)
-
-	return ctrl.Result{}, nil
+	return absentTotal, newlyAbsent
 }
 
 // SetupWithManager sets up the controller with the Manager.
