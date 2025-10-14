@@ -1,4 +1,5 @@
 //go:build linux
+// +build linux
 
 package main
 
@@ -9,15 +10,11 @@ import (
 	"log"
 	"math"
 	"net"
-	"net/http"
 	"os"
-	"sync/atomic"
 	"time"
 
 	apiv1alpha1 "github.com/mariusbertram/ip-rule-operator/api/v1alpha1"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vishvananda/netlink"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,87 +41,6 @@ const (
 	ackValueDone            = "done"
 )
 
-var (
-	metricRulesAdded = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: "iprule_agent",
-			Name:      "rules_added_total",
-			Help:      "Number of ip rules successfully added",
-		},
-	)
-	metricRulesDeleted = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: "iprule_agent",
-			Name:      "rules_deleted_total",
-			Help:      "Number of ip rules successfully deleted",
-		},
-	)
-	metricRuleErrors = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: "iprule_agent",
-			Name:      "rule_errors_total",
-			Help:      "Errors while adding/deleting rules",
-		},
-	)
-	metricConfigsProcessed = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: "iprule_agent",
-			Name:      "ipruleconfigs_processed_total",
-			Help:      "Processed IPRuleConfig objects",
-		},
-	)
-	metricConfigsDeleted = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Namespace: "iprule_agent",
-			Name:      "ipruleconfigs_deleted_total",
-			Help:      "IPRuleConfig objects deleted (state=absent)",
-		},
-	)
-	metricDesiredGauge = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: "iprule_agent",
-			Name:      "desired_rules",
-			Help:      "Desired (present) rules",
-		},
-	)
-	metricPresentGauge = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: "iprule_agent",
-			Name:      "present_rules",
-			Help:      "Already existing rules",
-		},
-	)
-	metricAbsentGauge = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: "iprule_agent",
-			Name:      "absent_rules",
-			Help:      "Rules marked absent (configs)",
-		},
-	)
-	metricReconcileDuration = prometheus.NewHistogram(
-		prometheus.HistogramOpts{
-			Namespace: "iprule_agent",
-			Name:      "reconcile_duration_seconds",
-			Help:      "Duration of a reconcile loop",
-			Buckets:   prometheus.ExponentialBuckets(0.005, 2, 12),
-		},
-	)
-)
-
-func init() {
-	prometheus.MustRegister(metricRulesAdded)
-	prometheus.MustRegister(metricRulesDeleted)
-	prometheus.MustRegister(metricRuleErrors)
-	prometheus.MustRegister(metricConfigsProcessed)
-	prometheus.MustRegister(metricConfigsDeleted)
-	prometheus.MustRegister(metricDesiredGauge)
-	prometheus.MustRegister(metricPresentGauge)
-	prometheus.MustRegister(metricAbsentGauge)
-	prometheus.MustRegister(metricReconcileDuration)
-}
-
-var firstReady atomic.Bool
-
 func main() {
 	cfg := ctrl.GetConfigOrDie()
 	// Extend scheme
@@ -148,42 +64,14 @@ func main() {
 		log.Printf("WARN: NODE_NAME nicht gesetzt; koordinierte Löschung deaktiviert")
 	}
 
-	metricsAddr := getEnvString("METRICS_ADDR", ":9090")
-	if metricsAddr != "" {
-		mux := http.NewServeMux()
-		mux.Handle("/metrics", promhttp.Handler())
-		mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("ok"))
-		})
-		mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
-			if firstReady.Load() {
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte("ready"))
-			} else {
-				http.Error(w, "not yet", http.StatusServiceUnavailable)
-			}
-		})
-		go func() {
-			log.Printf("metrics/health server listening on %s", metricsAddr)
-			if err := http.ListenAndServe(metricsAddr, mux); err != nil {
-				log.Printf("metrics server error: %v", err)
-			}
-		}()
-	}
-
 	log.Printf("starting iprule-agent (IPRuleConfig mode) on node %s", nodeName)
 
 	ctx := context.Background()
 	interval := getEnvDuration("RECONCILE_PERIOD", 10*time.Second)
 	for {
-		start := time.Now()
 		if err := reconcileOnce(ctx, c, nodeName); err != nil {
 			log.Printf("reconcile error: %v", err)
-		} else {
-			firstReady.CompareAndSwap(false, true)
 		}
-		metricReconcileDuration.Observe(time.Since(start).Seconds())
 		time.Sleep(interval)
 	}
 }
@@ -213,31 +101,20 @@ func reconcileOnce(ctx context.Context, c client.Client, nodeName string) error 
 	if err := c.List(ctx, cfgList, &client.ListOptions{}); err != nil {
 		return fmt.Errorf("list IPRuleConfigs: %w", err)
 	}
-
-	// Filter managed-by label
 	filtered := make([]*apiv1alpha1.IPRuleConfig, 0, len(cfgList.Items))
-	absentCount := 0
 	for i := range cfgList.Items {
 		cfg := &cfgList.Items[i]
 		if cfg.Labels["managed-by"] != "ip-rule-operator" {
 			continue
 		}
-		if cfg.Spec.State == apiv1alpha1.StateAbsent {
-			absentCount++
-		}
 		filtered = append(filtered, cfg)
 	}
-
 	// Build rule index once
-	ruleIndex, presentCount, err := buildRuleIndex()
+	ruleIndex, err := buildRuleIndex()
 	if err != nil {
 		return err
 	}
-
-	desiredPresent := 0
-
 	for _, cfg := range filtered {
-		metricConfigsProcessed.Inc()
 		ip := cfg.Spec.ServiceIP
 		table := cfg.Spec.Table
 		prio := cfg.Spec.Priority
@@ -252,41 +129,31 @@ func reconcileOnce(ctx context.Context, c client.Client, nodeName string) error 
 			present = ruleIndex[ruleKey(ip, table, 0)] || ruleIndex[ruleKey(ip, table, -1)]
 		}
 
-		if cfg.Spec.State == apiv1alpha1.StatePresent { // present
-			desiredPresent++
+		if cfg.Spec.State == apiv1alpha1.StatePresent {
 			if present {
 				continue
 			}
 			if err := addRuleWithRetry(ruleEntry{IP: ip, Table: table, Priority: prio}); err != nil {
-				metricRuleErrors.Inc()
 				log.Printf("add rule failed after retries (%s table %d prio %d): %v", ip, table, prio, err)
 			} else {
-				metricRulesAdded.Inc()
 				log.Printf("added ip rule: from %s lookup table %d priority %d", ip, table, prio)
 			}
 			continue
 		}
-		// state=absent => koordinierte Löschung
 		if err := handleAbsentConfig(ctx, c, cfg, nodeName, present); err != nil {
-			metricRuleErrors.Inc()
 			log.Printf("handleAbsentConfig %s failed: %v", cfg.Name, err)
 		}
 	}
-
-	metricDesiredGauge.Set(float64(desiredPresent))
-	metricPresentGauge.Set(float64(presentCount))
-	metricAbsentGauge.Set(float64(absentCount))
 	return nil
 }
 
 // buildRuleIndex reads rules once and builds an index
-func buildRuleIndex() (map[string]bool, int, error) {
+func buildRuleIndex() (map[string]bool, error) {
 	rules, err := netlink.RuleList(netlink.FAMILY_ALL)
 	if err != nil {
-		return nil, 0, fmt.Errorf("list rules: %w", err)
+		return nil, fmt.Errorf("list rules: %w", err)
 	}
 	idx := make(map[string]bool, len(rules))
-	presentCount := 0
 	for _, rl := range rules {
 		if rl.Src == nil {
 			continue
@@ -304,9 +171,8 @@ func buildRuleIndex() (map[string]bool, int, error) {
 		idx[ruleKey(ip, rl.Table, -1)] = true
 		// Konkrete Priority festhalten
 		idx[ruleKey(ip, rl.Table, prio)] = true
-		presentCount++
 	}
-	return idx, presentCount, nil
+	return idx, nil
 }
 
 func ruleKey(ip string, table, prio int) string { return fmt.Sprintf("%s|%d|%d", ip, table, prio) }
@@ -446,7 +312,6 @@ func handleAbsentConfig(
 		if err := delRuleWithRetry(ruleEntry{IP: ip, Table: table, Priority: prio}); err != nil {
 			return fmt.Errorf("delete rule: %w", err)
 		}
-		metricRulesDeleted.Inc()
 		log.Printf("deleted ip rule (absent): from %s lookup table %d priority %d", ip, table, prio)
 	}
 	ackKey := annotationCleanupPrefix + nodeName
@@ -508,7 +373,6 @@ func handleAbsentConfig(
 	if err := deleteIPRuleConfigWithRetry(ctx, c, fresh); err != nil {
 		return fmt.Errorf("final delete: %w", err)
 	}
-	metricConfigsDeleted.Inc()
 	log.Printf("deleted IPRuleConfig %s after all node acks", fresh.Name)
 	return nil
 }

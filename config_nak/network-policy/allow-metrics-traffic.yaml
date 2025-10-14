@@ -1,13 +1,10 @@
-# This NetworkPolicy allows ingress traffic
-# with Pods running on namespaces labeled with 'metrics: enabled'. Only Pods on those
-# namespaces are able to gather data from the metrics endpoint.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   labels:
     app.kubernetes.io/name: ip-rule-operator
     app.kubernetes.io/managed-by: kustomize
-  name: allow-metrics-traffic
+  name: allow-controller-traffic
   namespace: system
 spec:
   podSelector:
@@ -16,12 +13,4 @@ spec:
       app.kubernetes.io/name: ip-rule-operator
   policyTypes:
     - Ingress
-  ingress:
-    # This allows ingress traffic from any namespace with the label metrics: enabled
-    - from:
-      - namespaceSelector:
-          matchLabels:
-            metrics: enabled  # Only from namespaces with this label
-      ports:
-        - port: 8443
-          protocol: TCP
+  ingress: []

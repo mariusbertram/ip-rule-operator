@@ -21,13 +21,12 @@ This yields a fully declarative lifecycle for policy routing tied to Kubernetes 
 6. [Installation (Kubernetes)](#installation-kubernetes)
 7. [OpenShift Notes](#openshift-notes)
 8. [Agent Deployment & Control](#agent-deployment--control)
-9. [Metrics](#metrics)
-10. [Environment Variables](#environment-variables)
-11. [Security & Permissions](#security--permissions)
-12. [Development & Contribution](#development--contribution)
-13. [Troubleshooting](#troubleshooting)
-14. [Roadmap / Ideas](#roadmap--ideas)
-15. [License](#license)
+9. [Environment Variables](#environment-variables)
+10. [Security & Permissions](#security--permissions)
+11. [Development & Contribution](#development--contribution)
+12. [Troubleshooting](#troubleshooting)
+13. [Roadmap / Ideas](#roadmap--ideas)
+14. [License](#license)
 
 ---
 ## Use Cases
@@ -231,34 +230,11 @@ oc adm policy add-scc-to-user iprule-agent-scc -z ip-rule-operator-iprule-agent 
 Operator manages the DaemonSet via the singleton `Agent` CR. Changing `spec.image`, nodeSelector or tolerations changes a template hash → rolling update (maxUnavailable=1). Status reflects rollout progress.
 
 ---
-## Metrics
-### Controller
-- `iprule_config_created_total`
-- `iprule_config_updated_total`
-- `iprule_config_marked_absent_total`
-- `iprule_desired_configs`
-- `iprule_absent_configs`
-
-### Agent (`:9090/metrics`)
-- `iprule_agent_rules_added_total`
-- `iprule_agent_rules_deleted_total`
-- `iprule_agent_rule_errors_total`
-- `iprule_agent_ipruleconfigs_processed_total`
-- `iprule_agent_ipruleconfigs_deleted_total`   (neu; Anzahl gelöschter CRs mit state=absent)
-- `iprule_agent_desired_rules`
-- `iprule_agent_present_rules`
-- `iprule_agent_absent_rules`
-- `iprule_agent_reconcile_duration_seconds`
-
-Probes:
-- `/health` (liveness)
-- `/ready` (readiness, after first successful reconcile)
-
----
 ## Environment Variables
 Agent Pod supports:
 - `RECONCILE_PERIOD` (default `10s`) – Poll Intervall zum Einlesen der `IPRuleConfig` Objekte / Kernel Regeln.
-- `METRICS_ADDR` (default `:9090`) – Leerer Wert deaktiviert HTTP Server.
+
+Hinweis: Frühere Prometheus/Metrics-Endpunkte und RBAC wurden vollständig entfernt. Es werden keine Metriken mehr exponiert.
 
 Controller (standard controller-runtime Flags/ENV je nach Manager Start, aktuell keine speziellen eigenen ENV).
 
@@ -326,3 +302,65 @@ Apache License 2.0 – see [LICENSE](LICENSE).
 
 ---
 Happy routing! 🚀
+
+---
+## Cross-Build / Plattform-Hinweise
+Der Agent nutzt Linux netlink Funktionalität und wird nur für Linux gebaut (Build-Tag `//go:build linux`). Der Controller wurde nun ebenfalls als Linux-only markiert (ebenfalls Build-Tag), um Misch-Plattform Builds zu verhindern. Beide Einstiegspunkte (`cmd/main.go`, `cmd/agent/main.go`) besitzen `//go:build linux`.
+
+Typische Szenarien:
+
+1. Lokaler Build (Linux Host):
+   ```bash
+   go build ./cmd      # Controller
+   go build ./cmd/agent
+   ```
+
+2. Cross-Build unter Windows (cmd.exe):
+   ```cmd
+   set GOOS=linux
+   set GOARCH=amd64
+   set CGO_ENABLED=0
+   go build -o bin\ip-rule-operator-linux-amd64 ./cmd
+   go build -o bin\iprule-agent-linux-amd64 ./cmd\agent
+   ```
+   Hinweis: Wegen der Linux-Build-Tags werden die Dateien nicht für andere GOOS kompiliert.
+
+   PowerShell-Variante:
+   ```powershell
+   $env:GOOS="linux"; $env:GOARCH="amd64"; go build -o bin/agent-linux-amd64 ./cmd/agent
+   ```
+
+3. Mehrere Architekturen (z.B. amd64 + arm64):
+   ```bash
+   GOOS=linux GOARCH=amd64 go build -o bin/agent-linux-amd64 ./cmd/agent
+   GOOS=linux GOARCH=arm64 go build -o bin/agent-linux-arm64 ./cmd/agent
+   ```
+
+4. Multi-Arch Container mit Docker Buildx (Agent & Controller):
+   ```bash
+   docker buildx build --platform linux/amd64,linux/arm64 -t <your-registry>/ip-rule-operator:latest --push .
+   docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.agent -t <your-registry>/iprule-agent:latest --push .
+   ```
+
+5. Schneller Test des Agent-Binaries in einem Linux-Container (Windows Host):
+   ```bash
+   docker run --rm -v %CD%:/work -w /work alpine:latest /bin/sh -c "./bin/agent-linux-amd64 || echo run inside cluster"
+   ```
+   (Unter PowerShell ggf. Pfad-Anpassungen oder WSL verwenden.)
+
+6. Warum der Agent nicht unter Windows läuft:
+   - Paket `github.com/vishvananda/netlink` ist Linux-spezifisch.
+   - Policy Routing (ip rule) existiert nicht analog unter Windows; funktionale Parität wäre nicht gegeben.
+
+7. Tests unter Windows:
+   - `go test ./...` funktioniert für Controller-Logik.
+   - Agent-spezifische Logik kann durch Interface-Abstraktion in zukünftigen Refactorings testbar gemacht werden (Mocks für netlink Calls).
+
+Troubleshooting beim Cross-Build:
+- Fehlermeldung `undefined: netlink.RuleList`: Meist falsches GOOS (nicht linux) oder Build-Tag greift nicht.
+- Sicherstellen, dass keine CGO Abhängigkeit erzwungen wird; Standard ist `CGO_ENABLED=1`. Falls Probleme: `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./cmd/agent`.
+- Multi-Arch push braucht aktivierten Buildx: `docker buildx create --use` (einmalig).
+
+Empfehlung für CI:
+- Matrix: `GOOS=linux` + `GOARCH` in `[amd64, arm64]` für Agent.
+- Controller optional zusätzlich `GOOS=windows` / `darwin` bauen (falls gewünscht), da keine netlink Abhängigkeit.

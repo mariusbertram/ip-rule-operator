@@ -139,12 +139,8 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				Env: []corev1.EnvVar{
 					{Name: "NODE_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
 					{Name: "RECONCILE_PERIOD", Value: "10s"},
-					{Name: "METRICS_ADDR", Value: ":9090"},
 				},
-				Ports:          []corev1.ContainerPort{{Name: "metrics", ContainerPort: 9090, Protocol: corev1.ProtocolTCP}},
-				LivenessProbe:  &corev1.Probe{ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/health", Port: intstrFromString("metrics")}}, InitialDelaySeconds: 10, PeriodSeconds: 30, TimeoutSeconds: 2, FailureThreshold: 3},
-				ReadinessProbe: &corev1.Probe{ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/ready", Port: intstrFromString("metrics")}}, InitialDelaySeconds: 5, PeriodSeconds: 15, TimeoutSeconds: 2, FailureThreshold: 3},
-				Resources:      corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resourceMustParse("10m"), corev1.ResourceMemory: resourceMustParse("16Mi")}, Limits: corev1.ResourceList{corev1.ResourceCPU: resourceMustParse("100m"), corev1.ResourceMemory: resourceMustParse("64Mi")}},
+				Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resourceMustParse("10m"), corev1.ResourceMemory: resourceMustParse("16Mi")}, Limits: corev1.ResourceList{corev1.ResourceCPU: resourceMustParse("100m"), corev1.ResourceMemory: resourceMustParse("64Mi")}},
 			}},
 		}
 		daemonSet.Spec.Template = corev1.PodTemplateSpec{ObjectMeta: metav1.ObjectMeta{Labels: podLabels}, Spec: podSpec}

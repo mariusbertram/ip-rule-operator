@@ -66,7 +66,7 @@ type ipRuleEntry struct {
 	PrefixLen int
 }
 
-func (r *IPRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { // lint: reduce complexity by delegating
+func (r *IPRuleReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) { // lint: reduce complexity by delegating
 	log := logf.FromContext(ctx)
 
 	ipRules := &apiv1alpha1.IPRuleList{}
@@ -86,8 +86,9 @@ func (r *IPRuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	absentTotal, newlyAbsent := r.markAbsent(ctx, entryMap)
-	metricDesiredGauge.Set(float64(len(entryMap)))
-	metricAbsentGauge.Set(float64(absentTotal))
+	// Metriken entfernt
+	// metricDesiredGauge.Set(float64(len(entryMap)))
+	// metricAbsentGauge.Set(float64(absentTotal))
 
 	log.Info("finished reconciling ip rule configs",
 		"desired", len(entryMap),
@@ -203,10 +204,10 @@ func (r *IPRuleReconciler) applyDesiredConfigs(ctx context.Context, entryMap map
 		switch result {
 		case controllerutil.OperationResultCreated:
 			created++
-			metricConfigCreate.Inc()
+			// metricConfigCreate.Inc()
 		case controllerutil.OperationResultUpdated:
 			updated++
-			metricConfigUpdate.Inc()
+			// metricConfigUpdate.Inc()
 		}
 	}
 	return created, updated, unchanged, nil
@@ -240,7 +241,7 @@ func (r *IPRuleReconciler) markAbsent(ctx context.Context, entryMap map[string]i
 					logf.FromContext(ctx).Error(err, "failed to mark IPRuleConfig absent", "name", cfg.Name)
 				} else {
 					newlyAbsent++
-					metricConfigMarkedAbsent.Inc()
+					// metricConfigMarkedAbsent.Inc()
 				}
 			}
 		}
