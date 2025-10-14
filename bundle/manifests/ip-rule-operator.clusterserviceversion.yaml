@@ -34,7 +34,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-10-13T10:47:48Z"
+    createdAt: "2025-10-14T11:22:39Z"
     features.operators.openshift.io/disconnected: "true"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -48,6 +48,9 @@ spec:
         displayName: Agent
         kind: Agent
         name: agents.api.operator.brtrm.dev
+        version: v1alpha1
+      - kind: IPRuleConfig
+        name: ipruleconfigs.api.operator.brtrm.dev
         version: v1alpha1
       - description: IPRule is the Schema for the iprules API.
         displayName: IPRule
@@ -188,7 +191,7 @@ spec:
                       - /manager
                     env:
                       - name: AGENT_IMAGE
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
+                        value: ghcr.io/mariusbertram/iprule-agent:latest
                     image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
                     livenessProbe:
                       httpGet:
@@ -278,10 +281,6 @@ spec:
     name: Marius Bertram
     url: https://github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
-      name: iprule-agent
     - image: ghcr.io/mariusbertram/iprule-controller@sha256:5cfd3f94d34b80f9ff09c6f63bb5b1b4cf65ba160ee0b8da4c220ba162fa662b
       name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:48570cd1cdde2df14684ee446874d48471e55c7a8e6b30d640d20bc1e6a17c04
-      name: iprule_agent
   version: 0.0.1
