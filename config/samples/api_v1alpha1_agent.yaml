@@ -1,0 +1,10 @@
+apiVersion: api.operator.brtrm.dev/v1alpha1
+kind: Agent
+metadata:
+  labels:
+    app.kubernetes.io/name: ip-rule-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: agent-sample
+spec:
+  nodeselector:
+    kubernetes.io/os: linux
