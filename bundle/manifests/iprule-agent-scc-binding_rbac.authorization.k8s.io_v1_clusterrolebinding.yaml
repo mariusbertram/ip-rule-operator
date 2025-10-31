@@ -1,15 +1,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  creationTimestamp: null
   labels:
     app.kubernetes.io/name: ip-rule-operator
-    app.kubernetes.io/managed-by: kustomize
-  name: manager-rolebinding
+  name: iprule-agent-scc-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ip-rule-manager-role
+  name: iprule-agent-scc-role
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
-  namespace: system
+  name: iprule-agent
+  namespace: ip-rule-operator

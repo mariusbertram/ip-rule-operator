@@ -1,0 +1,19 @@
+# IP Rule Operator - Related Images Configuration
+# Diese Datei listet alle zusätzlichen Container-Images auf,
+# die in die ClusterServiceVersion unter spec.relatedImages aufgenommen werden sollen.
+#
+# Format: <image-name>:<image-url>
+# - image-name: Name des Images in relatedImages (z.B. "agent", "init-container")
+# - image-url: Vollständige Image-URL mit Tag (z.B. "ghcr.io/org/image:v1.0.0")
+#
+# Kommentare (Zeilen beginnend mit #) werden ignoriert
+# Leere Zeilen werden ignoriert
+#
+# Diese Datei wird automatisch von 'make bundle' aktualisiert
+
+# Agent DaemonSet Image
+agent:ghcr.io/mariusbertram/iprule-agent:v0.0.1
+
+# Weitere Images können hier manuell hinzugefügt werden:
+# init-container:ghcr.io/mariusbertram/init-tool:v1.0.0
+# sidecar:ghcr.io/mariusbertram/sidecar:v2.0.0
