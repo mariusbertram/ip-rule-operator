@@ -16,7 +16,7 @@ resources:
     namespaced: true
   controller: true
   domain: brtrm.dev
-  group: brtrm.dev
+  group: api.operator
   kind: IpRule
   path: github.com/mariusbertram/ip-rule-operator/api/v1alpha1
   version: v1alpha1
@@ -25,7 +25,7 @@ resources:
     namespaced: true
   controller: true
   domain: brtrm.dev
-  group: brtrm.dev
+  group: api.operator
   kind: Agent
   path: github.com/mariusbertram/ip-rule-operator/api/v1alpha1
   version: v1alpha1

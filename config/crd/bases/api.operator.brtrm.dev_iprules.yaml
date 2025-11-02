@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: IPRuleSpec defines the desired state of IPRule.
+            description: IpRuleSpec defines the desired state of IpRule.
             properties:
               cidr:
                 description: SubnetTableMappings defines which routing table/priority

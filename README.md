@@ -246,9 +246,9 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 #### Schritt 1: CRDs installieren
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/brtrm.dev.brtrm.dev_iprules.yaml
-kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/brtrm.dev.brtrm.dev_ipruleconfigs.yaml
-kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/brtrm.dev.brtrm.dev_agents.yaml
+kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/api.operator.brtrm.dev_iprules.yaml
+kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/api.operator.brtrm.dev_ipruleconfigs.yaml
+kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/api.operator.brtrm.dev_agents.yaml
 ```
 
 Oder mit Makefile (aus Repository):
@@ -279,7 +279,7 @@ make deploy IMG=${IMG}
 
 ```bash
 cat <<EOF | kubectl apply -f -
-apiVersion: brtrm.dev.brtrm.dev/v1alpha1
+apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
   name: iprule-agent
@@ -310,7 +310,7 @@ kubectl get pods -n ip-rule-operator-system
 kubectl get daemonset -n ip-rule-operator-system iprule-agent
 
 # Prüfe CRDs
-kubectl get crds | grep brtrm.dev
+kubectl get crds | grep api.operator.brtrm.dev
 ```
 
 ### Methode 2: Installation via OLM (OpenShift)
@@ -400,7 +400,7 @@ oc get csv -n openshift-operators | grep ip-rule
 oc get pods -n openshift-operators | grep ip-rule
 
 # Prüfe CRDs
-oc get crds | grep brtrm.dev
+oc get crds | grep api.operator.brtrm.dev
 ```
 
 ##### Schritt 5: Agent-Instanz erstellen
@@ -409,7 +409,7 @@ Nach erfolgreicher Installation des Operators:
 
 ```bash
 cat <<EOF | oc apply -f -
-apiVersion: brtrm.dev.brtrm.dev/v1alpha1
+apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
   name: iprule-agent
@@ -479,7 +479,7 @@ oc delete catalogsource ip-rule-operator-catalog -n openshift-marketplace
 Erstelle eine IPRule für LoadBalancer-IPs im Bereich `192.168.1.0/24`:
 
 ```yaml
-apiVersion: brtrm.dev.brtrm.dev/v1alpha1
+apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: IPRule
 metadata:
   name: datacenter-a-routing
@@ -499,7 +499,7 @@ kubectl apply -f iprule-example.yaml
 
 ```yaml
 ---
-apiVersion: brtrm.dev.brtrm.dev/v1alpha1
+apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: IPRule
 metadata:
   name: datacenter-a
@@ -508,7 +508,7 @@ spec:
   table: 100
   priority: 1000
 ---
-apiVersion: brtrm.dev.brtrm.dev/v1alpha1
+apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: IPRule
 metadata:
   name: datacenter-b
@@ -517,7 +517,7 @@ spec:
   table: 200
   priority: 1000
 ---
-apiVersion: brtrm.dev.brtrm.dev/v1alpha1
+apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: IPRule
 metadata:
   name: datacenter-c-priority

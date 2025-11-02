@@ -349,7 +349,7 @@ bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metada
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	@bash hack/update-related-images-config.sh config/manifests/related-images.txt $(AGENT_IMG)
-	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle --extra-service-accounts ip-rule-controller-manager,iprule-agent $(BUNDLE_GEN_FLAGS)
 	@echo ""
 	@python3 hack/add-related-images-to-csv.py config/manifests/related-images.txt $(USE_IMAGE_DIGESTS)
 	@echo ""

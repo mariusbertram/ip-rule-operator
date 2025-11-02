@@ -13,7 +13,12 @@ spec:
     - description: Agent is the Schema for the agents API.
       displayName: Agent
       kind: Agent
-      name: agents.brtrm.dev.brtrm.dev
+      name: agents.brtrm.dev
+      version: v1alpha1
+    - description: Agent is the Schema for the agents API.
+      displayName: Agent
+      kind: Agent
+      name: agents.api.operator.brtrm.dev
       version: v1alpha1
   description: Manages Ip Rules for VRF BGP LB IPs
   displayName: ip-rule-operator

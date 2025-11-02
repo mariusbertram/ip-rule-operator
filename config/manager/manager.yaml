@@ -66,6 +66,9 @@ spec:
         image: controller:latest
         name: manager
         ports: []
+        env:
+          - name: RELATED_IMAGE_AGENT_IMAGE
+            value: ghcr.io/mariusbertram/iprule-agent:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

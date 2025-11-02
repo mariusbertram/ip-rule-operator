@@ -56,6 +56,8 @@ type IPRuleReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch;create;update;delete;patch
 // +kubebuilder:rbac:groups=apps,resources=daemonsets/finalizers,verbs=get;create;update;delete
 // +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=ipruleconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=ipruleconfigs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=api.operator.brtrm.dev,resources=ipruleconfigs/finalizers,verbs=update
 
 // ipRuleEntry desired config candidate
 type ipRuleEntry struct {

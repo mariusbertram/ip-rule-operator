@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AgentSpec defines the desired state of Agent.
+            description: AgentStatus defines the observed state of Agent.
             properties:
               image:
                 description: Image optional override for the agent container image.
