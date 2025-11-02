@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: agents.brtrm.dev.brtrm.dev
+  name: agents.api.operator.brtrm.dev
 spec:
-  group: brtrm.dev.brtrm.dev
+  group: api.operator.brtrm.dev
   names:
     kind: Agent
     listKind: AgentList
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AgentStatus defines the observed state of Agent.
+            description: AgentSpec defines the desired state of Agent.
             properties:
               image:
                 description: Image optional override for the agent container image.

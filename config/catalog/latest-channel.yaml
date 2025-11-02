@@ -1,0 +1,7 @@
+---
+schema: olm.channel
+package: ip-rule-operator
+name: latest
+entries:
+  - name: ip-rule-operator.v0.0.1
+

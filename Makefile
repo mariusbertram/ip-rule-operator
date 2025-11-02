@@ -29,19 +29,20 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # brtrm.dev/ip-rule-operator-bundle:$VERSION and brtrm.dev/ip-rule-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= brtrm.dev/ip-rule-operator
+REGISTRY ?= ghcr.io/mariusbertram/
+IMAGE_TAG_BASE ?= ip-rule-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
+BUNDLE_IMG ?= ${REGISTRY}$(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
-BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-
+#BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+BUNDLE_GEN_FLAGS ?= --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 # USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
 # You can enable this value if you would like to use SHA Based Digests
 # To enable set flag to true
-USE_IMAGE_DIGESTS ?= false
+USE_IMAGE_DIGESTS ?= true
 ifeq ($(USE_IMAGE_DIGESTS), true)
 	BUNDLE_GEN_FLAGS += --use-image-digests
 endif
@@ -50,7 +51,9 @@ endif
 # This is useful for CI or a project to utilize a specific version of the operator-sdk toolkit.
 OPERATOR_SDK_VERSION ?= v1.41.1
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= ghcr.io/mariusbertram/iprule-controller:v$(VERSION)
+AGENT_IMG ?= ghcr.io/mariusbertram/iprule-agent:v$(VERSION)
+AGENT_IMG_LATEST ?= ghcr.io/mariusbertram/iprule-agent:latest
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -63,7 +66,7 @@ endif
 # Be aware that the target commands are only tested with Docker which is
 # scaffolded by default. However, you might want to replace it to use other
 # tools. (i.e. podman)
-CONTAINER_TOOL ?= docker
+CONTAINER_TOOL ?= podman
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -159,9 +162,20 @@ lint-config: golangci-lint ## Verify golangci-lint linter configuration
 build: manifests generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
+.PHONY: build-agent
+build-agent: fmt vet ## Build agent binary.
+	go build -tags linux -o bin/agent cmd/agent/main.go
+
+.PHONY: build-all
+build-all: build build-agent ## Build both manager and agent binaries.
+
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
+
+.PHONY: run-agent
+run-agent: fmt vet ## Run agent from your host (requires Linux and NET_ADMIN capability).
+	go run -tags linux ./cmd/agent/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
@@ -170,9 +184,24 @@ run: manifests generate fmt vet ## Run a controller from your host.
 docker-build: ## Build docker image with the manager.
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
+.PHONY: docker-build-agent
+docker-build-agent: ## Build docker image with the agent.
+	$(CONTAINER_TOOL) build -t ${AGENT_IMG} -t ${AGENT_IMG_LATEST} -f Dockerfile.agent .
+
+.PHONY: docker-build-all
+docker-build-all: docker-build docker-build-agent ## Build both manager and agent docker images.
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
+
+.PHONY: docker-push-agent
+docker-push-agent: ## Push docker image with the agent.
+	$(CONTAINER_TOOL) push ${AGENT_IMG}
+	$(CONTAINER_TOOL) push ${AGENT_IMG_LATEST}
+
+.PHONY: docker-push-all
+docker-push-all: docker-push docker-push-agent ## Push both manager and agent docker images.
 
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
@@ -190,6 +219,16 @@ docker-buildx: ## Build and push docker image for the manager for cross-platform
 	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
 	- $(CONTAINER_TOOL) buildx rm ip-rule-operator-builder
 	rm Dockerfile.cross
+
+.PHONY: docker-buildx-agent
+docker-buildx-agent: ## Build and push docker image for the agent for cross-platform support
+	# copy existing Dockerfile.agent and insert --platform=${BUILDPLATFORM} into Dockerfile.agent.cross
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile.agent > Dockerfile.agent.cross
+	- $(CONTAINER_TOOL) buildx create --name ip-rule-operator-agent-builder
+	$(CONTAINER_TOOL) buildx use ip-rule-operator-agent-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${AGENT_IMG} -f Dockerfile.agent.cross .
+	- $(CONTAINER_TOOL) buildx rm ip-rule-operator-agent-builder
+	rm Dockerfile.agent.cross
 
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
@@ -309,7 +348,14 @@ endif
 bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	@bash hack/update-related-images-config.sh config/manifests/related-images.txt $(AGENT_IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	@echo ""
+	@python3 hack/add-related-images-to-csv.py config/manifests/related-images.txt $(USE_IMAGE_DIGESTS)
+	@echo ""
+	@echo "Removing duplicate service account manifest..."
+	@rm -f bundle/manifests/ip-rule-controller-manager_v1_serviceaccount.yaml
+	@echo ""
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 .PHONY: bundle-build
@@ -342,21 +388,40 @@ endif
 BUNDLE_IMGS ?= $(BUNDLE_IMG)
 
 # The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
-CATALOG_IMG ?= $(IMAGE_TAG_BASE)-catalog:v$(VERSION)
+CATALOG_IMG ?= ${REGISTRY}$(IMAGE_TAG_BASE)-catalog:v$(VERSION)
 
 # Set CATALOG_BASE_IMG to an existing catalog image tag to add $BUNDLE_IMGS to that image.
 ifneq ($(origin CATALOG_BASE_IMG), undefined)
 FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
 endif
 
+OPM_CONTAINER_TOOL ?= podman
+
+.PHONY: catalog-fbc-build
+catalog-fbc-build: opm ## Build a file-based OLM catalog image (FBC).
+	rm -rf _output
+	mkdir -p _output/catalog
+	$(OPM) generate dockerfile _output/catalog
+	cp -r config/catalog _output/
+	$(OPM) render $(BUNDLE_IMG) --output yaml > _output/catalog/ip-rule-operator-latest.yaml
+	$(OPM) validate _output/catalog
+	cd _output && $(CONTAINER_TOOL) build -f catalog.Dockerfile -t $(CATALOG_IMG) .
+
 # Build a catalog image by adding bundle images to an empty catalog using the operator package manager tool, 'opm'.
 # This recipe invokes 'opm' in 'semver' bundle add mode. For more information on add modes, see:
 # https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
 .PHONY: catalog-build
 catalog-build: opm ## Build a catalog image.
-	$(OPM) index add --container-tool $(CONTAINER_TOOL) --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT)
+	$(OPM) index add --container-tool $(OPM_CONTAINER_TOOL) --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT)
 
 # Push the catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+# Deploy the catalog image as a CatalogSource in the cluster.
+.PHONY: catalog-deploy
+catalog-deploy: kustomize ## Deploy the catalog image to the cluster.
+	cd config/olm && $(KUSTOMIZE) edit set image catalog=$(CATALOG_IMG)
+	$(KUSTOMIZE) build config/olm | $(KUBECTL) apply -f -
+

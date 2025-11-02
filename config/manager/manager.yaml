@@ -94,5 +94,5 @@ spec:
             memory: 64Mi
         volumeMounts: []
       volumes: []
-      serviceAccountName: controller-manager
+      serviceAccountName: ip-rule-controller-manager
       terminationGracePeriodSeconds: 10

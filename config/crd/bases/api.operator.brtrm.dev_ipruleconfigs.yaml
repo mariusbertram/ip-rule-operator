@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: ipruleconfigs.brtrm.dev.brtrm.dev
+  name: ipruleconfigs.api.operator.brtrm.dev
 spec:
-  group: brtrm.dev.brtrm.dev
+  group: api.operator.brtrm.dev
   names:
     kind: IPRuleConfig
     listKind: IPRuleConfigList

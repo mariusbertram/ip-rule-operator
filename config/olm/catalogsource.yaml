@@ -1,0 +1,14 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: catalog
+  namespace: system
+spec:
+  image: catalog:latest
+  displayName: IP Rule Operator Catalog
+  publisher: Marius Bertram
+  sourceType: grpc
+  updateStrategy:
+    registryPoll:
+      interval: 10m
+

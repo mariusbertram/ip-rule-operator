@@ -1,5 +1,5 @@
 ## Append samples of your project ##
 resources:
-- brtrm.dev_v1alpha1_iprule.yaml
-- brtrm.dev_v1alpha1_agent.yaml
+  - api_v1alpha1_iprule.yaml
+  - api_v1alpha1_agent.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

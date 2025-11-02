@@ -1,0 +1,4 @@
+images:
+  - kind: CatalogSource
+    path: spec/image
+

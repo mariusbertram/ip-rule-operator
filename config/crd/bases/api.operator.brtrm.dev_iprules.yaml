@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: iprules.brtrm.dev.brtrm.dev
+  name: iprules.api.operator.brtrm.dev
 spec:
-  group: brtrm.dev.brtrm.dev
+  group: api.operator.brtrm.dev
   names:
     kind: IPRule
     listKind: IPRuleList
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: IpRuleSpec defines the desired state of IpRule.
+            description: IPRuleSpec defines the desired state of IPRule.
             properties:
               cidr:
                 description: SubnetTableMappings defines which routing table/priority
