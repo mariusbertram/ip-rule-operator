@@ -1,0 +1,201 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "api.operator.brtrm.dev/v1alpha1",
+          "kind": "Agent",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "ip-rule-operator"
+            },
+            "name": "agent-sample"
+          },
+          "spec": {
+            "nodeselector": {
+              "kubernetes.io/os": "linux"
+            }
+          }
+        },
+        {
+          "apiVersion": "api.operator.brtrm.dev/v1alpha1",
+          "kind": "IPRule",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "ip-rule-operator"
+            },
+            "name": "iprule-sample"
+          },
+          "spec": {
+            "cidr": "10.0.0.0/24",
+            "table": 254
+          }
+        }
+      ]
+    capabilities: Basic Install
+    createdAt: "2025-11-02T21:35:38Z"
+    operators.operatorframework.io/builder: operator-sdk-v1.41.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+  name: ip-rule-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+      - kind: Agent
+        name: agents.api.operator.brtrm.dev
+        version: v1alpha1
+      - kind: IPRuleConfig
+        name: ipruleconfigs.api.operator.brtrm.dev
+        version: v1alpha1
+      - kind: IPRule
+        name: iprules.api.operator.brtrm.dev
+        version: v1alpha1
+  description: Manages Ip Rules for VRF BGP LB IPs
+  displayName: ip-rule-operator
+  icon:
+    - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiI+DQogIDxkZWZzPg0KICAgIDwhLS0gQmFja2dyb3VuZCBncmFkaWVudCAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMyNkNFNTtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzFBNEQ4RjtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICA8L2xpbmVhckdyYWRpZW50Pg0KDQogICAgPCEtLSBTaGFkb3cgZmlsdGVyIC0tPg0KICAgIDxmaWx0ZXIgaWQ9InNoYWRvdyI+DQogICAgICA8ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMiIgc3RkRGV2aWF0aW9uPSIzIiBmbG9vZC1vcGFjaXR5PSIwLjMiLz4NCiAgICA8L2ZpbHRlcj4NCg0KICAgIDwhLS0gR2xvdyBmaWx0ZXIgLS0+DQogICAgPGZpbHRlciBpZD0iZ2xvdyI+DQogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIyLjUiIHJlc3VsdD0iY29sb3JlZEJsdXIiLz4NCiAgICAgIDxmZU1lcmdlPg0KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImNvbG9yZWRCbHVyIi8+DQogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPg0KICAgICAgPC9mZU1lcmdlPg0KICAgIDwvZmlsdGVyPg0KDQogICAgPCEtLSBBbmltYXRpb25zIC0tPg0KICAgIDxzdHlsZT4NCiAgICAgIEBrZXlmcmFtZXMgcHVsc2Ugew0KICAgICAgICAwJSwgMTAwJSB7IG9wYWNpdHk6IDAuNDsgdHJhbnNmb3JtOiBzY2FsZSgxKTsgfQ0KICAgICAgICA1MCUgeyBvcGFjaXR5OiAwLjg7IHRyYW5zZm9ybTogc2NhbGUoMS4wMyk7IH0NCiAgICAgIH0NCg0KICAgICAgQGtleWZyYW1lcyBkYXNoIHsNCiAgICAgICAgdG8geyBzdHJva2UtZGFzaG9mZnNldDogLTEwMDsgfQ0KICAgICAgfQ0KDQogICAgICBAa2V5ZnJhbWVzIG5vZGVHbG93IHsNCiAgICAgICAgMCUsIDEwMCUgeyBmaWx0ZXI6IGRyb3Atc2hhZG93KDAgMCA0cHggI0ZGRDcwMCk7IH0NCiAgICAgICAgNTAlIHsgZmlsdGVyOiBkcm9wLXNoYWRvdygwIDAgMTJweCAjRkZBNTAwKTsgfQ0KICAgICAgfQ0KDQogICAgICBAa2V5ZnJhbWVzIGNvbm5lY3Rpb25QdWxzZSB7DQogICAgICAgIDAlLCAxMDAlIHsgb3BhY2l0eTogMC42OyBzdHJva2Utd2lkdGg6IDI7IH0NCiAgICAgICAgNTAlIHsgb3BhY2l0eTogMTsgc3Ryb2tlLXdpZHRoOiAzOyB9DQogICAgICB9DQoNCiAgICAgIEBrZXlmcmFtZXMgYXJyb3dGbG93IHsNCiAgICAgICAgMCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVgoMCk7IG9wYWNpdHk6IDE7IH0NCiAgICAgICAgNTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVYKDhweCk7IG9wYWNpdHk6IDAuNjsgfQ0KICAgICAgICAxMDAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVYKDApOyBvcGFjaXR5OiAxOyB9DQogICAgICB9DQoNCiAgICAgIEBrZXlmcmFtZXMgdGV4dEdsb3cgew0KICAgICAgICAwJSwgMTAwJSB7IGZpbHRlcjogZHJvcC1zaGFkb3coMCAwIDNweCBjdXJyZW50Q29sb3IpOyBvcGFjaXR5OiAwLjk7IH0NCiAgICAgICAgNTAlIHsgZmlsdGVyOiBkcm9wLXNoYWRvdygwIDAgOHB4IGN1cnJlbnRDb2xvcik7IG9wYWNpdHk6IDE7IH0NCiAgICAgIH0NCg0KICAgICAgQGtleWZyYW1lcyBrOHNCYWRnZSB7DQogICAgICAgIDAlLCAxMDAlIHsNCiAgICAgICAgICB0cmFuc2Zvcm06IHJvdGF0ZSgwZGVnKSBzY2FsZSgxKTsNCiAgICAgICAgICBmaWx0ZXI6IGRyb3Atc2hhZG93KDAgMCAxMnB4IHJnYmEoMjU1LCAyNTUsIDI1NSwgMC44KSk7DQogICAgICAgIH0NCiAgICAgICAgMjUlIHsNCiAgICAgICAgICB0cmFuc2Zvcm06IHJvdGF0ZSgtMTBkZWcpIHNjYWxlKDEuMik7DQogICAgICAgICAgZmlsdGVyOiBkcm9wLXNoYWRvdygwIDAgMjVweCByZ2JhKDAsIDI1NSwgMTI3LCAxKSk7DQogICAgICAgIH0NCiAgICAgICAgNTAlIHsNCiAgICAgICAgICB0cmFuc2Zvcm06IHJvdGF0ZSgwZGVnKSBzY2FsZSgxLjEpOw0KICAgICAgICAgIGZpbHRlcjogZHJvcC1zaGFkb3coMCAwIDE1cHggcmdiYSgyNTUsIDI1NSwgMjU1LCAwLjkpKTsNCiAgICAgICAgfQ0KICAgICAgICA3NSUgew0KICAgICAgICAgIHRyYW5zZm9ybTogcm90YXRlKDEwZGVnKSBzY2FsZSgxLjIpOw0KICAgICAgICAgIGZpbHRlcjogZHJvcC1zaGFkb3coMCAwIDI1cHggcmdiYSg1MCwgMTA4LCAyMjksIDEpKTsNCiAgICAgICAgfQ0KICAgICAgfQ0KDQogICAgICBAa2V5ZnJhbWVzIHRpdGxlUHVsc2Ugew0KICAgICAgICAwJSwgMTAwJSB7IGZpbHRlcjogZHJvcC1zaGFkb3coMCAwIDRweCAjRkZGRkZGKTsgfQ0KICAgICAgICA1MCUgeyBmaWx0ZXI6IGRyb3Atc2hhZG93KDAgMCAxMnB4ICMwMEZGN0YpOyB9DQogICAgICB9DQoNCiAgICAgIC5yaW5nLW91dGVyIHsNCiAgICAgICAgYW5pbWF0aW9uOiBwdWxzZSA0cyBlYXNlLWluLW91dCBpbmZpbml0ZSwgZGFzaCA4cyBsaW5lYXIgaW5maW5pdGU7DQogICAgICB9DQoNCiAgICAgIC5yaW5nLWlubmVyIHsNCiAgICAgICAgYW5pbWF0aW9uOiBwdWxzZSA0cyBlYXNlLWluLW91dCBpbmZpbml0ZSAwLjVzLCBkYXNoIDZzIGxpbmVhciBpbmZpbml0ZTsNCiAgICAgIH0NCg0KICAgICAgLm5vZGUgew0KICAgICAgICBhbmltYXRpb246IG5vZGVHbG93IDIuNXMgZWFzZS1pbi1vdXQgaW5maW5pdGU7DQogICAgICB9DQoNCiAgICAgIC5jb25uZWN0aW9uIHsNCiAgICAgICAgYW5pbWF0aW9uOiBjb25uZWN0aW9uUHVsc2UgMnMgZWFzZS1pbi1vdXQgaW5maW5pdGU7DQogICAgICB9DQoNCiAgICAgIC5hcnJvdy1wcmltYXJ5IHsNCiAgICAgICAgYW5pbWF0aW9uOiBhcnJvd0Zsb3cgMnMgZWFzZS1pbi1vdXQgaW5maW5pdGU7DQogICAgICB9DQoNCiAgICAgIC5hcnJvdy1zZWNvbmRhcnkgew0KICAgICAgICBhbmltYXRpb246IGFycm93RmxvdyAycyBlYXNlLWluLW91dCBpbmZpbml0ZSAwLjZzOw0KICAgICAgfQ0KDQogICAgICAucm91dGUtbGFiZWwgew0KICAgICAgICBhbmltYXRpb246IHRleHRHbG93IDIuNXMgZWFzZS1pbi1vdXQgaW5maW5pdGU7DQogICAgICB9DQoNCiAgICAgIC5rOHMtYmFkZ2Ugew0KICAgICAgICBhbmltYXRpb246IGs4c0JhZGdlIDIuNXMgZWFzZS1pbi1vdXQgaW5maW5pdGU7DQogICAgICAgIHRyYW5zZm9ybS1vcmlnaW46IDEyOHB4IDEyOHB4Ow0KICAgICAgICB0cmFuc2Zvcm0tYm94OiBmaWxsLWJveDsNCiAgICAgIH0NCg0KICAgICAgLnRpdGxlIHsNCiAgICAgICAgYW5pbWF0aW9uOiB0aXRsZVB1bHNlIDRzIGVhc2UtaW4tb3V0IGluZmluaXRlOw0KICAgICAgfQ0KICAgIDwvc3R5bGU+DQogIDwvZGVmcz4NCg0KICA8IS0tIEJhY2tncm91bmQgLS0+DQogIDxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiByeD0iMjAiIGZpbGw9InVybCgjYmdHcmFkaWVudCkiLz4NCg0KICA8IS0tIE91dGVyIG5ldHdvcmsgcmluZ3MgLSBBbmltYXRlZCAtLT4NCiAgPGNpcmNsZSBjbGFzcz0icmluZy1vdXRlciIgY3g9IjEyOCIgY3k9IjEyOCIgcj0iMTAwIiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtZGFzaGFycmF5PSIxMCA1IiBvcGFjaXR5PSIwLjQiLz4NCiAgPGNpcmNsZSBjbGFzcz0icmluZy1pbm5lciIgY3g9IjEyOCIgY3k9IjEyOCIgcj0iODUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI4IDQiIG9wYWNpdHk9IjAuNSIvPg0KDQogIDwhLS0gQ2VudHJhbCBOZXR3b3JrIFRvcG9sb2d5IC0tPg0KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0OCwgNDgpIiBmaWx0ZXI9InVybCgjc2hhZG93KSI+DQogICAgPCEtLSBDb25uZWN0aW9uIExpbmVzIC0gQW5pbWF0ZWQgLS0+DQogICAgPGxpbmUgY2xhc3M9ImNvbm5lY3Rpb24iIHgxPSI4MCIgeTE9IjI1IiB4Mj0iMjUiIHkyPSI4MCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNiIgc3R5bGU9ImFuaW1hdGlvbi1kZWxheTogMHMiLz4NCiAgICA8bGluZSBjbGFzcz0iY29ubmVjdGlvbiIgeDE9IjgwIiB5MT0iMjUiIHgyPSIxMzUiIHkyPSI4MCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNiIgc3R5bGU9ImFuaW1hdGlvbi1kZWxheTogMC4zcyIvPg0KICAgIDxsaW5lIGNsYXNzPSJjb25uZWN0aW9uIiB4MT0iMjUiIHkxPSI4MCIgeDI9IjQ1IiB5Mj0iMTMwIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMiIgb3BhY2l0eT0iMC42IiBzdHlsZT0iYW5pbWF0aW9uLWRlbGF5OiAwLjZzIi8+DQogICAgPGxpbmUgY2xhc3M9ImNvbm5lY3Rpb24iIHgxPSIxMzUiIHkxPSI4MCIgeDI9IjExNSIgeTI9IjEzMCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNiIgc3R5bGU9ImFuaW1hdGlvbi1kZWxheTogMC45cyIvPg0KICAgIDxsaW5lIGNsYXNzPSJjb25uZWN0aW9uIiB4MT0iNDUiIHkxPSIxMzAiIHgyPSIxMTUiIHkyPSIxMzAiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyIiBvcGFjaXR5PSIwLjYiIHN0eWxlPSJhbmltYXRpb24tZGVsYXk6IDEuMnMiLz4NCg0KICAgIDwhLS0gVG9wIE5vZGUgKEdhdGV3YXkvUm91dGVyKSAtIEFuaW1hdGVkIC0tPg0KICAgIDxnIGNsYXNzPSJub2RlIiBzdHlsZT0iYW5pbWF0aW9uLWRlbGF5OiAwcyI+DQogICAgICA8Y2lyY2xlIGN4PSI4MCIgY3k9IjI1IiByPSIxMiIgZmlsbD0iI0ZGRDcwMCIgc3Ryb2tlPSIjRkZBNTAwIiBzdHJva2Utd2lkdGg9IjIuNSIvPg0KICAgICAgPGNpcmNsZSBjeD0iODAiIGN5PSIyNSIgcj0iOCIgZmlsbD0iI0ZGRjhEQyIgb3BhY2l0eT0iMC44Ii8+DQogICAgPC9nPg0KDQogICAgPCEtLSBMZWZ0IE5vZGUgLSBBbmltYXRlZCAtLT4NCiAgICA8ZyBjbGFzcz0ibm9kZSIgc3R5bGU9ImFuaW1hdGlvbi1kZWxheTogMC4ycyI+DQogICAgICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjgwIiByPSIxMSIgZmlsbD0iI0ZGRDcwMCIgc3Ryb2tlPSIjRkZBNTAwIiBzdHJva2Utd2lkdGg9IjIiLz4NCiAgICAgIDxjaXJjbGUgY3g9IjI1IiBjeT0iODAiIHI9IjciIGZpbGw9IiNGRkY4REMiIG9wYWNpdHk9IjAuOCIvPg0KICAgIDwvZz4NCg0KICAgIDwhLS0gUmlnaHQgTm9kZSAtIEFuaW1hdGVkIC0tPg0KICAgIDxnIGNsYXNzPSJub2RlIiBzdHlsZT0iYW5pbWF0aW9uLWRlbGF5OiAwLjRzIj4NCiAgICAgIDxjaXJjbGUgY3g9IjEzNSIgY3k9IjgwIiByPSIxMSIgZmlsbD0iI0ZGRDcwMCIgc3Ryb2tlPSIjRkZBNTAwIiBzdHJva2Utd2lkdGg9IjIiLz4NCiAgICAgIDxjaXJjbGUgY3g9IjEzNSIgY3k9IjgwIiByPSI3IiBmaWxsPSIjRkZGOERDIiBvcGFjaXR5PSIwLjgiLz4NCiAgICA8L2c+DQoNCiAgICA8IS0tIEJvdHRvbSBMZWZ0IE5vZGUgLSBBbmltYXRlZCAtLT4NCiAgICA8ZyBjbGFzcz0ibm9kZSIgc3R5bGU9ImFuaW1hdGlvbi1kZWxheTogMC42cyI+DQogICAgICA8Y2lyY2xlIGN4PSI0NSIgY3k9IjEzMCIgcj0iMTEiIGZpbGw9IiNGRkQ3MDAiIHN0cm9rZT0iI0ZGQTUwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+DQogICAgICA8Y2lyY2xlIGN4PSI0NSIgY3k9IjEzMCIgcj0iNyIgZmlsbD0iI0ZGRjhEQyIgb3BhY2l0eT0iMC44Ii8+DQogICAgPC9nPg0KDQogICAgPCEtLSBCb3R0b20gUmlnaHQgTm9kZSAtIEFuaW1hdGVkIC0tPg0KICAgIDxnIGNsYXNzPSJub2RlIiBzdHlsZT0iYW5pbWF0aW9uLWRlbGF5OiAwLjhzIj4NCiAgICAgIDxjaXJjbGUgY3g9IjExNSIgY3k9IjEzMCIgcj0iMTEiIGZpbGw9IiNGRkQ3MDAiIHN0cm9rZT0iI0ZGQTUwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+DQogICAgICA8Y2lyY2xlIGN4PSIxMTUiIGN5PSIxMzAiIHI9IjciIGZpbGw9IiNGRkY4REMiIG9wYWNpdHk9IjAuOCIvPg0KICAgIDwvZz4NCiAgPC9nPg0KDQogIDwhLS0gUm91dGluZyBBcnJvd3MgKFBvbGljeS1CYXNlZCBSb3V0aW5nKSAtLT4NCiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzUsIDE2NSkiPg0KICAgIDwhLS0gUHJpbWFyeSByb3V0ZSAoR3JlZW4pIC0gQW5pbWF0ZWQgLS0+DQogICAgPGcgY2xhc3M9ImFycm93LXByaW1hcnkiPg0KICAgICAgPHBhdGggZD0iTSAwIDAgTCA1MCAwIiBzdHJva2U9IiMwMEZGN0YiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4NCiAgICAgIDxwYXRoIGQ9Ik0gNDQgLTcgTCA1NSAwIEwgNDQgNyBaIiBmaWxsPSIjMDBGRjdGIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4NCiAgICA8L2c+DQogICAgPHRleHQgY2xhc3M9InJvdXRlLWxhYmVsIiB4PSIyNSIgeT0iLTEyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZmlsbD0iIzAwRkY3RiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9ImJvbGQiPlRBQkxFIDEwMDwvdGV4dD4NCg0KICAgIDwhLS0gU2Vjb25kYXJ5IHJvdXRlIChSZWQpIC0gQW5pbWF0ZWQgLS0+DQogICAgPGcgY2xhc3M9ImFycm93LXNlY29uZGFyeSI+DQogICAgICA8cGF0aCBkPSJNIDYwIC0xNSBMIDEwMCAtMTUiIHN0cm9rZT0iI0ZGNkI2QiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbHRlcj0idXJsKCNnbG93KSIvPg0KICAgICAgPHBhdGggZD0iTSA5NCAtMjEgTCAxMDUgLTE1IEwgOTQgLTkgWiIgZmlsbD0iI0ZGNkI2QiIgZmlsdGVyPSJ1cmwoI2dsb3cpIi8+DQogICAgPC9nPg0KICAgIDx0ZXh0IGNsYXNzPSJyb3V0ZS1sYWJlbCIgeD0iODIiIHk9Ii0yNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjkiIGZpbGw9IiNGRjZCNkIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIiBzdHlsZT0iYW5pbWF0aW9uLWRlbGF5OiAwLjRzIj5UQUJMRSAyMDA8L3RleHQ+DQogIDwvZz4NCg0KICA8IS0tIE1haW4gVGl0bGUgLSBBbmltYXRlZCAtLT4NCiAgPHRleHQgY2xhc3M9InRpdGxlIiB4PSIxMjgiIHk9IjIyMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjMyIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI0ZGRkZGRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjIiIGZpbHRlcj0idXJsKCNzaGFkb3cpIj5JUCBSVUxFPC90ZXh0Pg0KDQogIDwhLS0gU3VidGl0bGUgLSBBbmltYXRlZCAtLT4NCiAgPHRleHQgY2xhc3M9InRpdGxlIiB4PSIxMjgiIHk9IjI0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjRTBFMEUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBvcGFjaXR5PSIwLjkiIGxldHRlci1zcGFjaW5nPSIzIiBzdHlsZT0iYW5pbWF0aW9uLWRlbGF5OiAwLjVzIj5PUEVSQVRPUjwvdGV4dD4NCg0KICA8IS0tIEt1YmVybmV0ZXMgQmFkZ2UgLSBBbmltYXRlZCAoWkVOVFJBTCBpbSBMb2dvLCBncm/DnyB1bmQgYXVmZsOkbGxpZykgLS0+DQogIDxnIGNsYXNzPSJrOHMtYmFkZ2UiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyOCwgMTI4KSI+DQogICAgPCEtLSDDhHXDn2VyZXIgU2NoYXR0ZW4tUmluZyBmw7xyIFRpZWZlIC0tPg0KICAgIDxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjI1IiBmaWxsPSIjMDAwMDAwIiBvcGFjaXR5PSIwLjMiLz4NCiAgICA8IS0tIEhhdXB0a3JlaXMgbWl0IHN0YXJrZW0gS29udHJhc3QgLS0+DQogICAgPGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iMzUiIGZpbGw9IiMzMjZDRTUiIG9wYWNpdHk9IjEiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSI0Ii8+DQogICAgPCEtLSBJbm5lcmVyIGhlbGxlciBLcmVpcyBmw7xyIDNELUVmZmVrdCAtLT4NCiAgICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIzMiIgZmlsbD0iI0ZGRkZGRiIgb3BhY2l0eT0iMC4yNSIvPg0KICAgIDwhLS0gSW5uZW5yaW5nIGbDvHIgRGV0YWlscyAtLT4NCiAgICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjEuNSIgb3BhY2l0eT0iMC41Ii8+DQogICAgPCEtLSBUZXh0IC0gZ3Jvw58gdW5kIGZldHQgLS0+DQogICAgPHRleHQgeD0iNjAiIHk9IjcyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiNGRkZGRkYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIiBsZXR0ZXItc3BhY2luZz0iMSI+SzhzPC90ZXh0Pg0KICA8L2c+DQo8L3N2Zz4NCg0K
+      mediatype: image/svg+xml
+  install:
+    spec:
+      clusterPermissions:
+        - rules:
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
+          serviceAccountName: ip-rule-controller-manager
+      deployments:
+        - label:
+            app.kubernetes.io/managed-by: kustomize
+            app.kubernetes.io/name: ip-rule-operator
+            control-plane: controller-manager
+          name: controller-manager
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app.kubernetes.io/name: ip-rule-operator
+                control-plane: controller-manager
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/default-container: manager
+                labels:
+                  app.kubernetes.io/name: ip-rule-operator
+                  control-plane: controller-manager
+              spec:
+                containers:
+                  - args:
+                      - --metrics-bind-address=:8443
+                      - --leader-elect
+                      - --health-probe-bind-address=:8081
+                    command:
+                      - /manager
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:10b542eaee358b5747f2b60187e311b905a98bb2273ee7edc0bc486a4515c7ee
+                    livenessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: 8081
+                      initialDelaySeconds: 15
+                      periodSeconds: 20
+                    name: manager
+                    readinessProbe:
+                      httpGet:
+                        path: /readyz
+                        port: 8081
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 128Mi
+                      requests:
+                        cpu: 10m
+                        memory: 64Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                securityContext:
+                  runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
+                serviceAccountName: ip-rule-controller-manager
+                terminationGracePeriodSeconds: 10
+      permissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - coordination.k8s.io
+              resources:
+                - leases
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - events
+              verbs:
+                - create
+                - patch
+          serviceAccountName: ip-rule-controller-manager
+    strategy: deployment
+  installModes:
+    - supported: true
+      type: OwnNamespace
+    - supported: true
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: false
+      type: AllNamespaces
+  keywords:
+    - Network
+  links:
+    - name: Ip Rule Operator
+      url: https://ip-rule-operator.domain
+  maintainers:
+    - email: marius@brtrm.de
+      name: Marius Bertram
+  maturity: alpha
+  provider:
+    name: Marius Bertram
+    url: github.com/mariusbertram/ip-rule-operator
+  relatedImages:
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:10b542eaee358b5747f2b60187e311b905a98bb2273ee7edc0bc486a4515c7ee
+      name: manager
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:e80856abac631d9234a2ff30f4bd7109559ce4beefae2ed16fb181defe0d8df7
+      name: agent
+  version: 0.0.1

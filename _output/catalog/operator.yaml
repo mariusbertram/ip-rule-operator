@@ -1,0 +1,5 @@
+---
+defaultChannel: latest
+name: ip-rule-operator
+schema: olm.package
+

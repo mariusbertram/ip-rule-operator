@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#326CE5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A4D8F;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Shadow filter -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+
+    <!-- Glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Animations -->
+    <style>
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.03); }
+      }
+
+      @keyframes dash {
+        to { stroke-dashoffset: -100; }
+      }
+
+      @keyframes nodeGlow {
+        0%, 100% { filter: drop-shadow(0 0 4px #FFD700); }
+        50% { filter: drop-shadow(0 0 12px #FFA500); }
+      }
+
+      @keyframes connectionPulse {
+        0%, 100% { opacity: 0.6; stroke-width: 2; }
+        50% { opacity: 1; stroke-width: 3; }
+      }
+
+      @keyframes arrowFlow {
+        0% { transform: translateX(0); opacity: 1; }
+        50% { transform: translateX(8px); opacity: 0.6; }
+        100% { transform: translateX(0); opacity: 1; }
+      }
+
+      @keyframes textGlow {
+        0%, 100% { filter: drop-shadow(0 0 3px currentColor); opacity: 0.9; }
+        50% { filter: drop-shadow(0 0 8px currentColor); opacity: 1; }
+      }
+
+      @keyframes k8sBadge {
+        0%, 100% {
+          transform: rotate(0deg) scale(1);
+          filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+        }
+        25% {
+          transform: rotate(-10deg) scale(1.2);
+          filter: drop-shadow(0 0 25px rgba(0, 255, 127, 1));
+        }
+        50% {
+          transform: rotate(0deg) scale(1.1);
+          filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+        }
+        75% {
+          transform: rotate(10deg) scale(1.2);
+          filter: drop-shadow(0 0 25px rgba(50, 108, 229, 1));
+        }
+      }
+
+      @keyframes titlePulse {
+        0%, 100% { filter: drop-shadow(0 0 4px #FFFFFF); }
+        50% { filter: drop-shadow(0 0 12px #00FF7F); }
+      }
+
+      .ring-outer {
+        animation: pulse 4s ease-in-out infinite, dash 8s linear infinite;
+      }
+
+      .ring-inner {
+        animation: pulse 4s ease-in-out infinite 0.5s, dash 6s linear infinite;
+      }
+
+      .node {
+        animation: nodeGlow 2.5s ease-in-out infinite;
+      }
+
+      .connection {
+        animation: connectionPulse 2s ease-in-out infinite;
+      }
+
+      .arrow-primary {
+        animation: arrowFlow 2s ease-in-out infinite;
+      }
+
+      .arrow-secondary {
+        animation: arrowFlow 2s ease-in-out infinite 0.6s;
+      }
+
+      .route-label {
+        animation: textGlow 2.5s ease-in-out infinite;
+      }
+
+      .k8s-badge {
+        animation: k8sBadge 2.5s ease-in-out infinite;
+        transform-origin: 128px 128px;
+        transform-box: fill-box;
+      }
+
+      .title {
+        animation: titlePulse 4s ease-in-out infinite;
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="256" height="256" rx="20" fill="url(#bgGradient)"/>
+
+  <!-- Outer network rings - Animated -->
+  <circle class="ring-outer" cx="128" cy="128" r="100" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-dasharray="10 5" opacity="0.4"/>
+  <circle class="ring-inner" cx="128" cy="128" r="85" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="8 4" opacity="0.5"/>
+
+  <!-- Central Network Topology -->
+  <g transform="translate(48, 48)" filter="url(#shadow)">
+    <!-- Connection Lines - Animated -->
+    <line class="connection" x1="80" y1="25" x2="25" y2="80" stroke="#FFFFFF" stroke-width="2" opacity="0.6" style="animation-delay: 0s"/>
+    <line class="connection" x1="80" y1="25" x2="135" y2="80" stroke="#FFFFFF" stroke-width="2" opacity="0.6" style="animation-delay: 0.3s"/>
+    <line class="connection" x1="25" y1="80" x2="45" y2="130" stroke="#FFFFFF" stroke-width="2" opacity="0.6" style="animation-delay: 0.6s"/>
+    <line class="connection" x1="135" y1="80" x2="115" y2="130" stroke="#FFFFFF" stroke-width="2" opacity="0.6" style="animation-delay: 0.9s"/>
+    <line class="connection" x1="45" y1="130" x2="115" y2="130" stroke="#FFFFFF" stroke-width="2" opacity="0.6" style="animation-delay: 1.2s"/>
+
+    <!-- Top Node (Gateway/Router) - Animated -->
+    <g class="node" style="animation-delay: 0s">
+      <circle cx="80" cy="25" r="12" fill="#FFD700" stroke="#FFA500" stroke-width="2.5"/>
+      <circle cx="80" cy="25" r="8" fill="#FFF8DC" opacity="0.8"/>
+    </g>
+
+    <!-- Left Node - Animated -->
+    <g class="node" style="animation-delay: 0.2s">
+      <circle cx="25" cy="80" r="11" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+      <circle cx="25" cy="80" r="7" fill="#FFF8DC" opacity="0.8"/>
+    </g>
+
+    <!-- Right Node - Animated -->
+    <g class="node" style="animation-delay: 0.4s">
+      <circle cx="135" cy="80" r="11" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+      <circle cx="135" cy="80" r="7" fill="#FFF8DC" opacity="0.8"/>
+    </g>
+
+    <!-- Bottom Left Node - Animated -->
+    <g class="node" style="animation-delay: 0.6s">
+      <circle cx="45" cy="130" r="11" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+      <circle cx="45" cy="130" r="7" fill="#FFF8DC" opacity="0.8"/>
+    </g>
+
+    <!-- Bottom Right Node - Animated -->
+    <g class="node" style="animation-delay: 0.8s">
+      <circle cx="115" cy="130" r="11" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+      <circle cx="115" cy="130" r="7" fill="#FFF8DC" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- Routing Arrows (Policy-Based Routing) -->
+  <g transform="translate(75, 165)">
+    <!-- Primary route (Green) - Animated -->
+    <g class="arrow-primary">
+      <path d="M 0 0 L 50 0" stroke="#00FF7F" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+      <path d="M 44 -7 L 55 0 L 44 7 Z" fill="#00FF7F" filter="url(#glow)"/>
+    </g>
+    <text class="route-label" x="25" y="-12" font-family="Arial, sans-serif" font-size="9" fill="#00FF7F" text-anchor="middle" font-weight="bold">TABLE 100</text>
+
+    <!-- Secondary route (Red) - Animated -->
+    <g class="arrow-secondary">
+      <path d="M 60 -15 L 100 -15" stroke="#FF6B6B" stroke-width="4" stroke-linecap="round" filter="url(#glow)"/>
+      <path d="M 94 -21 L 105 -15 L 94 -9 Z" fill="#FF6B6B" filter="url(#glow)"/>
+    </g>
+    <text class="route-label" x="82" y="-25" font-family="Arial, sans-serif" font-size="9" fill="#FF6B6B" text-anchor="middle" font-weight="bold" style="animation-delay: 0.4s">TABLE 200</text>
+  </g>
+
+  <!-- Main Title - Animated -->
+  <text class="title" x="128" y="220" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="2" filter="url(#shadow)">IP RULE</text>
+
+  <!-- Subtitle - Animated -->
+  <text class="title" x="128" y="240" font-family="Arial, sans-serif" font-size="14" fill="#E0E0E0" text-anchor="middle" opacity="0.9" letter-spacing="3" style="animation-delay: 0.5s">OPERATOR</text>
+
+  <!-- Kubernetes Badge - Animated (ZENTRAL im Logo, groß und auffällig) -->
+  <g class="k8s-badge" transform="translate(128, 128)">
+    <!-- Äußerer Schatten-Ring für Tiefe -->
+    <circle cx="60" cy="60" r="25" fill="#000000" opacity="0.3"/>
+    <!-- Hauptkreis mit starkem Kontrast -->
+    <circle cx="60" cy="60" r="35" fill="#326CE5" opacity="1" stroke="#FFFFFF" stroke-width="4"/>
+    <!-- Innerer heller Kreis für 3D-Effekt -->
+    <circle cx="60" cy="60" r="32" fill="#FFFFFF" opacity="0.25"/>
+    <!-- Innenring für Details -->
+    <circle cx="60" cy="60" r="28" fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.5"/>
+    <!-- Text - groß und fett -->
+    <text x="60" y="72" font-family="Arial, sans-serif" font-size="28" fill="#FFFFFF" text-anchor="middle" font-weight="bold" letter-spacing="1">K8s</text>
+  </g>
+</svg>
+

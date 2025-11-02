@@ -186,7 +186,7 @@ docker-build: ## Build docker image with the manager.
 
 .PHONY: docker-build-agent
 docker-build-agent: ## Build docker image with the agent.
-	$(CONTAINER_TOOL) build -t ${AGENT_IMG} -t ${AGENT_IMG_LATEST} -f Dockerfile.agent .
+	$(CONTAINER_TOOL) build -t ${AGENT_IMG} -t ${AGENT_IMG_LATEST} -f agent.Dockerfile .
 
 .PHONY: docker-build-all
 docker-build-all: docker-build docker-build-agent ## Build both manager and agent docker images.

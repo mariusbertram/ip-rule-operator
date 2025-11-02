@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Gradient for background -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#326CE5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A4D8F;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Glow effect for arrows -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Animations -->
+    <style>
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.02); }
+      }
+
+      @keyframes dash {
+        to { stroke-dashoffset: -100; }
+      }
+
+      @keyframes nodeGlow {
+        0%, 100% { filter: drop-shadow(0 0 3px #FFD700); }
+        50% { filter: drop-shadow(0 0 8px #FFA500); }
+      }
+
+      @keyframes arrowFlow {
+        0% { transform: translateX(0); opacity: 1; }
+        100% { transform: translateX(10px); opacity: 0.3; }
+      }
+
+      @keyframes textGlow {
+        0%, 100% { filter: drop-shadow(0 0 2px #FFFFFF); }
+        50% { filter: drop-shadow(0 0 6px #00FF7F); }
+      }
+
+      .ring { animation: pulse 3s ease-in-out infinite, dash 4s linear infinite; }
+      .node { animation: nodeGlow 2s ease-in-out infinite; }
+      .arrow-green { animation: arrowFlow 1.5s ease-in-out infinite; }
+      .arrow-red { animation: arrowFlow 1.5s ease-in-out infinite 0.5s; }
+      .text { animation: textGlow 3s ease-in-out infinite; }
+
+      .connection {
+        animation: connectionPulse 2s ease-in-out infinite;
+      }
+
+      @keyframes connectionPulse {
+        0%, 100% { opacity: 0.5; stroke-width: 2; }
+        50% { opacity: 0.9; stroke-width: 2.5; }
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="100" cy="100" r="100" fill="url(#bgGradient)"/>
+
+  <!-- Outer Ring (Network) - Animated -->
+  <circle class="ring" cx="100" cy="100" r="75" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="8 4" opacity="0.6"/>
+
+  <!-- Network Topology -->
+  <g>
+    <!-- Connection Lines - Animated -->
+    <line class="connection" x1="60" y1="20" x2="20" y2="60" stroke="#FFFFFF" stroke-width="2" opacity="0.7" style="animation-delay: 0s"/>
+    <line class="connection" x1="60" y1="20" x2="100" y2="60" stroke="#FFFFFF" stroke-width="2" opacity="0.7" style="animation-delay: 0.3s"/>
+    <line class="connection" x1="20" y1="60" x2="35" y2="100" stroke="#FFFFFF" stroke-width="2" opacity="0.7" style="animation-delay: 0.6s"/>
+    <line class="connection" x1="100" y1="60" x2="85" y2="100" stroke="#FFFFFF" stroke-width="2" opacity="0.7" style="animation-delay: 0.9s"/>
+    <line class="connection" x1="35" y1="100" x2="85" y2="100" stroke="#FFFFFF" stroke-width="2" opacity="0.7" style="animation-delay: 1.2s"/>
+
+    <!-- Network Nodes - Animated -->
+    <circle class="node" cx="60" cy="20" r="8" fill="#FFD700" stroke="#FFA500" stroke-width="2" style="animation-delay: 0s"/>
+    <circle class="node" cx="20" cy="60" r="8" fill="#FFD700" stroke="#FFA500" stroke-width="2" style="animation-delay: 0.2s"/>
+    <circle class="node" cx="100" cy="60" r="8" fill="#FFD700" stroke="#FFA500" stroke-width="2" style="animation-delay: 0.4s"/>
+    <circle class="node" cx="35" cy="100" r="8" fill="#FFD700" stroke="#FFA500" stroke-width="2" style="animation-delay: 0.6s"/>
+    <circle class="node" cx="85" cy="100" r="8" fill="#FFD700" stroke="#FFA500" stroke-width="2" style="animation-delay: 0.8s"/>
+  </g>
+
+  <!-- Routing Arrows (Policy-Based Routing Symbol) -->
+  <g transform="translate(60, 130)">
+    <!-- Green Arrow - Animated -->
+    <g class="arrow-green">
+      <path d="M 0 0 L 40 0" stroke="#00FF7F" stroke-width="4" stroke-linecap="round" filter="url(#glow)"/>
+      <path d="M 35 -6 L 45 0 L 35 6 Z" fill="#00FF7F" filter="url(#glow)"/>
+    </g>
+
+    <!-- Red Arrow - Animated -->
+    <g class="arrow-red">
+      <path d="M 50 -10 L 75 -10" stroke="#FF6B6B" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+      <path d="M 70 -16 L 80 -10 L 70 -4 Z" fill="#FF6B6B" filter="url(#glow)"/>
+    </g>
+  </g>
+
+  <!-- Text - Animated -->
+  <text class="text" x="100" y="165" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">IP RULE</text>
+  <text class="text" x="100" y="182" font-family="Arial, sans-serif" font-size="10" fill="#E0E0E0" text-anchor="middle" opacity="0.9" letter-spacing="2" style="animation-delay: 0.3s">OPERATOR</text>
+</svg>

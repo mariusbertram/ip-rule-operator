@@ -1,0 +1,85 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ip-rule-manager-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+      - serviceaccounts
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+  - apiGroups:
+      - api.operator.brtrm.dev
+    resources:
+      - agents
+      - iprules
+      - ipruleconfigs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - api.operator.brtrm.dev
+    resources:
+      - agents/status
+      - agents/finalizers
+      - iprules/status
+      - iprules/finalizers
+      - ipruleconfigs/status
+      - ipruleconfigs/finalizers
+    verbs:
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets/status
+      - daemonsets/finalizers
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ip-rule-manager-rolebinding-fix
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ip-rule-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: ip-rule-controller-manager
+    namespace: ip-rule
+

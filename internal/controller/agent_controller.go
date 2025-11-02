@@ -126,7 +126,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			tolerations = agent.Spec.Tolerations
 		}
 		podSpec := corev1.PodSpec{
-			ServiceAccountName: "ip-rule-operator-iprule-agent",
+			ServiceAccountName: "iprule-agent",
 			HostNetwork:        true,
 			DNSPolicy:          corev1.DNSClusterFirstWithHostNet,
 			NodeSelector:       agent.Spec.NodeSelector,

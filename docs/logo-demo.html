@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Rule Operator - Animierte Logos Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .logo-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .logo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        .logo-wrapper {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-card img {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+
+        .features {
+            text-align: left;
+            margin-top: 20px;
+            font-size: 0.95em;
+            line-height: 1.8;
+        }
+
+        .features li {
+            margin: 8px 0;
+            padding-left: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(0, 255, 127, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 5px;
+            border: 1px solid rgba(0, 255, 127, 0.3);
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #00ff7f;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li:before {
+            content: "✨ ";
+            margin-right: 8px;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .logo-card {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 IP Rule Operator</h1>
+        <p class="subtitle">Animierte Logos Demo</p>
+
+        <div class="logo-grid">
+            <div class="logo-card">
+                <h2>Standard-Logo</h2>
+                <span class="badge">200x200px</span>
+                <span class="badge">7 Animationen</span>
+                <div class="logo-wrapper">
+                    <img src="logo.svg" alt="Standard Logo" width="200" height="200">
+                </div>
+                <ul class="features">
+                    <li>✅ Pulsierende Netzwerkringe</li>
+                    <li>✅ Leuchtende Nodes (Glow)</li>
+                    <li>✅ Pulsierende Verbindungen</li>
+                    <li>✅ Fließende Routing-Pfeile</li>
+                    <li>✅ Leuchtender Text</li>
+                </ul>
+                <p style="margin-top: 15px; opacity: 0.8; font-size: 0.9em;">
+                    <strong>Verwendung:</strong> GitHub README, Dokumentation
+                </p>
+            </div>
+
+            <div class="logo-card">
+                <h2>Catalog-Logo</h2>
+                <span class="badge">256x256px</span>
+                <span class="badge">11 Animationen</span>
+                <div class="logo-wrapper">
+                    <img src="logo-catalog.svg" alt="Catalog Logo" width="256" height="256">
+                </div>
+                <ul class="features">
+                    <li>✅ Doppelt-pulsierende Ringe</li>
+                    <li>✅ Intensive Node-Glows</li>
+                    <li>✅ Pulsierende Verbindungen</li>
+                    <li>✅ Fließende Routing-Pfeile</li>
+                    <li>✅ Leuchtende TABLE-Labels</li>
+                    <li>✅ Animierter K8s-Badge (NEU: größer & auffälliger!)</li>
+                    <li>✅ Pulsierender Titel</li>
+                </ul>
+                <p style="margin-top: 15px; opacity: 0.8; font-size: 0.9em;">
+                    <strong>Verwendung:</strong> OperatorHub, OpenShift Catalog
+                </p>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🎨 Technische Details</h3>
+            <ul>
+                <li><strong>Format:</strong> SVG mit eingebetteten CSS-Animationen</li>
+                <li><strong>Performance:</strong> Hardware-beschleunigt (GPU), 60 FPS</li>
+                <li><strong>Größe:</strong> ~8-10KB pro Logo (sehr leichtgewichtig)</li>
+                <li><strong>Kompatibilität:</strong> Alle modernen Browser (Chrome, Firefox, Safari, Edge)</li>
+                <li><strong>Technologie:</strong> Reine SVG+CSS, keine JavaScript-Abhängigkeiten</li>
+                <li><strong>Base64-fähig:</strong> Funktioniert auch encodiert in OLM/OperatorHub</li>
+            </ul>
+        </div>
+
+        <div class="info-box" style="margin-top: 20px;">
+            <h3>⚙️ Animationstypen</h3>
+            <ul>
+                <li><strong>Pulse:</strong> Größen- und Opacity-Änderung (3-4s Zyklen)</li>
+                <li><strong>Dash:</strong> Rotierendes Strichmuster (4-8s Zyklen)</li>
+                <li><strong>Glow:</strong> Leuchtender Schatten-Effekt (2-2.5s Zyklen)</li>
+                <li><strong>Flow:</strong> Horizontale Bewegung (1.5-2s Zyklen)</li>
+                <li><strong>Connection Pulse:</strong> Dicken- und Opacity-Änderung (2s Zyklen)</li>
+                <li><strong>Text Glow:</strong> Farbwechselnder Leuchteffekt (2.5-4s Zyklen)</li>
+            </ul>
+        </div>
+
+        <p style="margin-top: 40px; opacity: 0.7; font-size: 0.95em;">
+            📚 Mehr Informationen: <code>docs/ANIMATIONS.md</code>
+        </p>
+    </div>
+</body>
+</html>
+
