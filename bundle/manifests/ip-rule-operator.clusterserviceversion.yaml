@@ -37,7 +37,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-11-03T20:15:58Z"
+    createdAt: "2025-11-03T21:28:33Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1
@@ -65,6 +65,38 @@ spec:
   install:
     spec:
       clusterPermissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - nodes
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - agents
+                - ipruleconfigs
+                - iprules
+              verbs:
+                - '*'
+            - apiGroups:
+                - apps/v1
+              resources:
+                - daemonsets/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - security.openshift.io
+              resourceNames:
+                - privileged
+              resources:
+                - securitycontextconstraints
+              verbs:
+                - use
+          serviceAccountName: iprule-agent
         - rules:
             - apiGroups:
                 - ""

@@ -10,5 +10,5 @@ roleRef:
   name: agent-scc-role
 subjects:
   - kind: ServiceAccount
-    name: agent
+    name: iprule-agent
     namespace: system
