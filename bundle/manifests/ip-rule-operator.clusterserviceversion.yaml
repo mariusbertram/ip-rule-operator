@@ -37,7 +37,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-11-02T21:35:38Z"
+    createdAt: "2025-11-03T00:13:35Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1
@@ -46,7 +46,9 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - kind: Agent
+      - description: Agent is the Schema for the agents API.
+        displayName: Agent
+        kind: Agent
         name: agents.api.operator.brtrm.dev
         version: v1alpha1
       - kind: IPRuleConfig
@@ -65,6 +67,90 @@ spec:
       clusterPermissions:
         - rules:
             - apiGroups:
+                - ""
+              resources:
+                - secrets
+                - services
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - serviceaccounts
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - agents
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - agents/finalizers
+                - ipruleconfigs/finalizers
+                - iprules/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - agents/status
+                - ipruleconfigs/status
+                - iprules/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - ipruleconfigs
+                - iprules
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets/finalizers
+              verbs:
+                - create
+                - delete
+                - get
+                - update
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets/status
+              verbs:
+                - get
+            - apiGroups:
                 - authentication.k8s.io
               resources:
                 - tokenreviews
@@ -77,6 +163,37 @@ spec:
               verbs:
                 - create
           serviceAccountName: ip-rule-controller-manager
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - nodes
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - api.operator.brtrm.dev
+              resources:
+                - ipruleconfigs
+                - iprules
+              verbs:
+                - '*'
+            - apiGroups:
+                - apps/v1
+              resources:
+                - daemonsets/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - security.openshift.io
+              resourceNames:
+                - privileged
+              resources:
+                - securitycontextconstraints
+              verbs:
+                - use
+          serviceAccountName: iprule-agent
       deployments:
         - label:
             app.kubernetes.io/managed-by: kustomize
@@ -105,7 +222,10 @@ spec:
                       - --health-probe-bind-address=:8081
                     command:
                       - /manager
-                    image: ghcr.io/mariusbertram/iprule-controller@sha256:10b542eaee358b5747f2b60187e311b905a98bb2273ee7edc0bc486a4515c7ee
+                    env:
+                      - name: RELATED_IMAGE_AGENT_IMAGE
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:b3ffa2b99f846f091a397afd15ed7cfea317cba83d167fff842e58a126998907
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:4d181da23767a3c3958aadbdd1927e0e95fdfc5e8433482a268bf8b74efba75f
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -194,8 +314,10 @@ spec:
     name: Marius Bertram
     url: github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-controller@sha256:10b542eaee358b5747f2b60187e311b905a98bb2273ee7edc0bc486a4515c7ee
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:b3ffa2b99f846f091a397afd15ed7cfea317cba83d167fff842e58a126998907
+      name: agent-image
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:4d181da23767a3c3958aadbdd1927e0e95fdfc5e8433482a268bf8b74efba75f
       name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:e80856abac631d9234a2ff30f4bd7109559ce4beefae2ed16fb181defe0d8df7
-      name: agent
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:b3ffa2b99f846f091a397afd15ed7cfea317cba83d167fff842e58a126998907
+      name: agent_image
   version: 0.0.1

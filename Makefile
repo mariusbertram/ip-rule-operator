@@ -403,7 +403,9 @@ catalog-fbc-build: opm ## Build a file-based OLM catalog image (FBC).
 	mkdir -p _output/catalog
 	$(OPM) generate dockerfile _output/catalog
 	cp -r config/catalog _output/
-	$(OPM) render $(BUNDLE_IMG) --output yaml > _output/catalog/ip-rule-operator-latest.yaml
+	$(OPM_CONTAINER_TOOL) pull $(BUNDLE_IMG)
+	bundle=$$($(OPM_CONTAINER_TOOL) inspect --format='{{index .RepoDigests 0}}' $(BUNDLE_IMG)) && \
+	$(OPM) render $$bundle --output yaml > _output/catalog/ip-rule-operator-latest.yaml
 	$(OPM) validate _output/catalog
 	cd _output && $(CONTAINER_TOOL) build -f catalog.Dockerfile -t $(CATALOG_IMG) .
 

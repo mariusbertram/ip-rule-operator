@@ -1,106 +1,82 @@
-# IP Rule Operator - Logo-Erstellung Zusammenfassung
+- Double pulsating rings (outer & inner)
+    - Intensive node glow effects
+    - Pulsating connections with thickness changes
+    - Flowing routing arrows with labels
+    - Glowing TABLE 100/200 labels
+    - Animated K8s badge with rotation and scaling
+    - Pulsating title with color-changing glow
 
-## ✅ Erstellte Assets
+### 2. Documentation
+- ✅ **`docs/README.md`** - Logo documentation
+  - Design elements and color palette
+  - Usage instructions
+  - OLM Base64 encoding guide
+  - PNG export commands
 
-### 1. Animierte Logos
-- ✅ **`docs/logo.svg`** - Standard-Logo für README (200x200px)
-  - Kubernetes-blaue Hintergrund mit Netzwerk-Topologie
-  - Goldene Nodes und weiße Verbindungslinien
-  - Routing-Pfeile in Grün (Table 100) und Rot (Table 200)
-  - Text "IP RULE" und "OPERATOR"
-  - **🎬 Animationen:**
-    - Pulsierende Netzwerkringe mit rotierendem Dash-Pattern
-    - Leuchtende Netzwerk-Knoten (goldener Glow-Effekt)
-    - Pulsierende Verbindungslinien
-    - Fließende Routing-Pfeile (grün und rot)
-    - Leuchtender Text mit dynamischem Glow
-
-- ✅ **`docs/logo-catalog.svg`** - Catalog-Logo für OpenShift (256x256px)
-  - Gradient-Hintergrund mit abgerundeten Ecken
-  - Drop-Shadow für 3D-Effekt
-  - Detaillierte Netzwerk-Topologie
-  - Routing-Tabellen-Labels
-  - "K8s" Badge in der Ecke
-  - **🎬 Animationen:**
-    - Doppelte pulsierende Ringe (outer & inner)
-    - Intensive Node-Glow-Effekte
-    - Pulsierende Verbindungen mit Dickenänderung
-    - Fließende Routing-Pfeile mit Labels
-    - Leuchtende TABLE 100/200 Labels
-    - Animierter K8s-Badge mit Rotation und Skalierung
-    - Pulsierender Titel mit farbwechselndem Glow
-
-### 2. Dokumentation
-- ✅ **`docs/README.md`** - Logo-Dokumentation
-  - Design-Elemente und Farbpalette
-  - Verwendungshinweise
-  - OLM Base64-Encoding Anleitung
-  - PNG-Export Kommandos
-
-### 3. Hilfsskripte
-- ✅ **`docs/encode-logo.sh`** - Base64-Encoding-Skript (Linux/Mac/WSL)
-- ✅ **`docs/encode-logo.ps1`** - Base64-Encoding-Skript (Windows PowerShell)
+### 3. Helper Scripts
+- ✅ **`docs/encode-logo.sh`** - Base64 encoding script (Linux/Mac/WSL)
+- ✅ **`docs/encode-logo.ps1`** - Base64 encoding script (Windows PowerShell)
 
 ### 4. README Integration
-- ✅ Logo zur Haupt-README hinzugefügt
-- ✅ Zentrierte Darstellung mit Badges
-- ✅ Professionelles Layout
+- ✅ Logo added to main README
+- ✅ Centered display with badges
+- ✅ Professional layout
 
-## 🎨 Design-Konzept
+## 🎨 Design Concept
 
-### Symbolik
-- **Blauer Kreis**: Kubernetes-Cluster
-- **Goldene Nodes**: Kubernetes-Nodes/Services
-- **Weiße Linien**: Netzwerk-Verbindungen
-- **Gestrichelte Ringe**: Policy-Bereiche (CIDR)
-- **Grüner Pfeil**: Primäre Route (Table 100)
-- **Roter Pfeil**: Sekundäre Route (Table 200)
+### Symbolism
+- **Blue Circle**: Kubernetes Cluster
+- **Golden Nodes**: Kubernetes Nodes/Services
+- **White Lines**: Network connections
+- **Dashed Rings**: Policy areas (CIDR)
+- **Green Arrow**: Primary route (Table 100)
+- **Red Arrow**: Secondary route (Table 200)
 
-### Farben
-- Kubernetes-Blau: #326CE5
-- Dunkelblau: #1A4D8F  
+### Colors
+- Kubernetes Blue: #326CE5
+- Dark Blue: #1A4D8F  
 - Gold: #FFD700
 - Orange: #FFA500
-- Grün: #00FF7F
-- Rot: #FF6B6B
+- Green: #00FF7F
+- Red: #FF6B6B
 
-### 🎬 Animationseffekte
+### 🎭 Animation Effects
 
-Die Logos sind vollständig animiert, um mehr Aufmerksamkeit zu erregen:
+The logos are fully animated to attract more attention:
 
-#### Standard-Logo (logo.svg)
-- **Netzwerkringe**: Pulsieren und rotieren (3-4s Zyklen)
-- **Nodes**: Goldener Glow-Effekt, der stärker und schwächer wird (2s Zyklen)
-- **Verbindungen**: Pulsierende Dicke und Opacity (2s Zyklen, zeitversetzt)
-- **Routing-Pfeile**: Fließende Bewegung von links nach rechts (1.5s Zyklen)
-- **Text**: Leuchtender Glow-Effekt mit grünem Highlight (3s Zyklen)
+#### Standard Logo (logo.svg)
+- **Network Rings**: Pulsate and rotate (3-4s cycles)
+- **Nodes**: Golden glow effect that gets stronger and weaker (2s cycles)
+- **Connections**: Pulsating thickness and opacity (2s cycles, time-shifted)
+- **Routing Arrows**: Flowing movement from left to right (1.5s cycles)
+- **Text**: Glowing effect with green highlight (3s cycles)
 
-#### Catalog-Logo (logo-catalog.svg)
-- **Äußere Ringe**: Doppelte pulsierende Animationen (4s Zyklen, zeitversetzt)
-- **Nodes**: Intensiver Glow mit orangem Highlight (2.5s Zyklen)
-- **Verbindungen**: Pulsierende Dicke von 2px bis 3px (2s Zyklen)
-- **Routing-Pfeile**: Fließende Bewegung mit Opacity-Änderung (2s Zyklen)
-- **Route-Labels**: Leuchtende Labels "TABLE 100" und "TABLE 200" (2.5s Zyklen)
-- **K8s-Badge**: Rotation und Skalierung mit Opacity-Änderung (4s Zyklen)
-- **Titel**: Pulsierender Glow von weiß nach grün (4s Zyklen)
+#### Catalog Logo (logo-catalog.svg)
+- **Outer Rings**: Double pulsating animations (4s cycles, time-shifted)
+- **Nodes**: Intensive glow with orange highlight (2.5s cycles)
+- **Connections**: Pulsating thickness from 2px to 3px (2s cycles)
+- **Routing Arrows**: Flowing movement with opacity changes (2s cycles)
+- **Route Labels**: Glowing labels "TABLE 100" and "TABLE 200" (2.5s cycles)
+- **K8s Badge**: Rotation and scaling with opacity changes (4s cycles)
+- **Title**: Pulsating glow from white to green (4s cycles)
 
-#### Technische Details
-- Alle Animationen nutzen CSS-Keyframes innerhalb der SVG
-- Smooth `ease-in-out` Übergänge für natürliche Bewegungen
-- Zeitversätze (`animation-delay`) für koordinierte Effekte
-- Keine externen Abhängigkeiten - reine SVG+CSS
-- Browser-übergreifende Kompatibilität (moderne Browser)
-- Animations-Loop ist endlos (`infinite`)
+#### Technical Details
+- All animations use CSS keyframes within the SVG
+- Smooth `ease-in-out` transitions for natural movements
+- Time offsets (`animation-delay`) for coordinated effects
+- No external dependencies - pure SVG+CSS
+- Cross-browser compatibility (modern browsers)
+- Animation loop is infinite (`infinite`)
 
 #### Performance
-- Leichtgewichtig: Keine JavaScript-Abhängigkeiten
-- Hardware-beschleunigt: CSS-Animationen nutzen GPU
-- Skalierbar: SVG-Format bleibt scharf bei jeder Größe
-- Base64-kodierbar: Funktioniert auch in OLM/OperatorHub
+- Lightweight: No JavaScript dependencies
+- Hardware-accelerated: CSS animations use GPU
+- Scalable: SVG format stays sharp at any size
+- Base64-encodable: Works in OLM/OperatorHub as well
 
-## 📋 Nächste Schritte für OLM-Integration
+## 📋 Next Steps for OLM Integration
 
-### 1. Base64-Encoding erstellen
+### 1. Create Base64 Encoding
 
 ```bash
 # Linux/Mac/WSL
@@ -112,9 +88,9 @@ cd docs
 .\encode-logo.ps1
 ```
 
-### 2. ClusterServiceVersion aktualisieren
+### 2. Update ClusterServiceVersion
 
-Füge das encodierte Logo zu `config/manifests/bases/ip-rule-operator.clusterserviceversion.yaml` hinzu:
+Add the encoded logo to `config/manifests/bases/ip-rule-operator.clusterserviceversion.yaml`:
 
 ```yaml
 spec:
@@ -123,44 +99,44 @@ spec:
     mediatype: image/svg+xml
 ```
 
-### 3. Bundle neu generieren
+### 3. Regenerate Bundle
 
 ```bash
 make bundle VERSION=0.0.1
 ```
 
-## ✨ Verwendung
+## ✅ Usage
 
 ### In GitHub README
-Das Logo wird automatisch aus `docs/logo.svg` geladen.
+The logo is automatically loaded from `docs/logo.svg`.
 
-### In Dokumentation
+### In Documentation
 ```markdown
 ![IP Rule Operator Logo](../docs/logo.svg)
 ```
 
-### Für externe Websites
-Verwende den Raw-Link:
+### For External Websites
+Use the raw link:
 ```
 https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/docs/logo.svg
 ```
 
-## 🔄 PNG-Versionen erstellen (Optional)
+## 🖼️ Creating PNG Versions (Optional)
 
-Falls PNG-Versionen benötigt werden:
+If PNG versions are needed:
 
 ```bash
-# Mit ImageMagick (Logo mit transparentem Hintergrund)
+# With ImageMagick (logo with transparent background)
 convert -background none docs/logo.svg -resize 512x512 docs/logo-512.png
 convert -background none docs/logo.svg -resize 256x256 docs/logo-256.png
 convert -background none docs/logo.svg -resize 128x128 docs/logo-128.png
 convert -background none docs/logo.svg -resize 64x64 docs/logo-64.png
 
-# Catalog-Logo (mit Hintergrund)
+# Catalog logo (with background)
 convert docs/logo-catalog.svg -resize 256x256 docs/logo-catalog-256.png
 ```
 
-## ✅ Fertig!
+## ✅ Done!
 
-Alle Logo-Assets wurden erfolgreich erstellt und in die README integriert.
+All logo assets have been successfully created and integrated into the README.
 

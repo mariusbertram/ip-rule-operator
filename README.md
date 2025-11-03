@@ -8,27 +8,27 @@
   [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.11%2B-blue.svg)](https://kubernetes.io)
   [![OpenShift](https://img.shields.io/badge/OpenShift-4.x%2B-red.svg)](https://www.openshift.com)
 
-  **Automatische Verwaltung von IP-Routing-Regeln auf Kubernetes-Nodes**
+  **Automated Management of IP Routing Rules on Kubernetes Nodes**
   
-  *Policy-Based Routing für Kubernetes LoadBalancer Services*
+  *Policy-Based Routing for Kubernetes LoadBalancer Services*
 
 </div>
 
 ---
 
-Ein Kubernetes-Operator zur automatischen Verwaltung von IP-Routing-Regeln auf Cluster-Nodes basierend auf Service LoadBalancer-IPs.
+A Kubernetes operator for automatic management of IP routing rules on cluster nodes based on Service LoadBalancer IPs.
 
-## 📋 Überblick
+## 📋 Overview
 
-Der **IP Rule Operator** ermöglicht Policy-Based Routing in Kubernetes-Clustern durch automatische Konfiguration von Linux IP-Regeln auf Cluster-Nodes. Der Operator überwacht LoadBalancer-Services und erstellt basierend auf definierten Policies IP-Routing-Regeln, die Traffic von Service ClusterIPs über spezifische Routing-Tabellen leiten.
+The **IP Rule Operator** enables Policy-Based Routing in Kubernetes clusters through automatic configuration of Linux IP rules on cluster nodes. The operator monitors LoadBalancer Services and creates IP routing rules based on defined policies that route traffic from Service ClusterIPs through specific routing tables.
 
-### Was macht der Operator?
+### What does the Operator do?
 
-Der Operator besteht aus zwei Hauptkomponenten:
+The operator consists of two main components:
 
 1. **Controller (Manager)**: 
-   - Überwacht Kubernetes LoadBalancer-Services
-   - Matched LoadBalancer-IPs gegen definierte IPRule-Policies (CIDR-basiert)
+   - Monitors Kubernetes LoadBalancer Services
+   - Matches LoadBalancer IPs against defined IPRule policies (CIDR-based)
    - Generiert automatisch IPRuleConfig-Ressourcen für jeden Service
    - Verwaltet den Agent-DaemonSet
 

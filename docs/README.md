@@ -1,64 +1,39 @@
-# IP Rule Operator - Logos und Assets
-
-Dieses Verzeichnis enthält die visuellen Assets für den IP Rule Operator.
-
-> ✨ **NEU:** Alle Logos sind jetzt vollständig animiert für mehr Aufmerksamkeit und eine professionellere Darstellung!
-
-## Logo-Versionen
-
-### 1. Standard-Logo (`logo.svg`) 🎬
-- **Verwendung**: README, Dokumentation, Präsentationen
-- **Format**: SVG (vektorbasiert, skalierbar)
-- **Größe**: 200x200px (Standardgröße)
-- **Hintergrund**: Transparent/Kubernetes-Blau
-- **Animationen**: 7 verschiedene Effekte (pulsierende Ringe, leuchtende Nodes, fließende Pfeile)
-
-![Standard Logo](logo.svg)
-
-### 2. Catalog-Logo (`logo-catalog.svg`) 🎬
-- **Verwendung**: OpenShift OperatorHub, Operator Catalogs
-- **Format**: SVG mit Hintergrund
-- **Größe**: 256x256px
-- **Hintergrund**: Gradient (Kubernetes-Blau)
-- **Features**: Abgerundete Ecken, Drop-Shadow, detaillierter
-- **Animationen**: 11 verschiedene Effekte (inkl. animiertem K8s-Badge, leuchtende Labels)
-
 ![Catalog Logo](logo-catalog.svg)
 
-## 🎬 Animations-Features
+## 🎨 Animation Features
 
-Beide Logos nutzen moderne SVG+CSS Animationen für eine dynamische Darstellung:
+Both logos use modern SVG+CSS animations for dynamic presentation:
 
-- **Pulsierende Netzwerkringe**: Sanfte Größenänderung und Opacity-Wechsel
-- **Leuchtende Nodes**: Dynamischer Glow-Effekt auf allen Netzwerk-Knoten
-- **Fließende Routing-Pfeile**: Horizontale Bewegung der grünen und roten Pfeile
-- **Pulsierende Verbindungen**: Zeitversetzte Animation der Netzwerk-Linien
-- **Leuchtender Text**: Dynamischer Glow auf allen Text-Elementen
-- **Animierter K8s-Badge** (nur Catalog): Rotation und Skalierung
+- **Pulsating Network Rings**: Smooth size changes and opacity transitions
+- **Glowing Nodes**: Dynamic glow effect on all network nodes
+- **Flowing Routing Arrows**: Horizontal movement of green and red arrows
+- **Pulsating Connections**: Time-shifted animation of network lines
+- **Glowing Text**: Dynamic glow on all text elements
+- **Animated K8s Badge** (Catalog only): Rotation and scaling
 
-📚 **Technische Details**: Siehe [ANIMATIONS.md](ANIMATIONS.md) für vollständige Dokumentation aller Animationseffekte.
+📚 **Technical Details**: See [ANIMATIONS.md](ANIMATIONS.md) for complete documentation of all animation effects.
 
-## Design-Elemente
+## Design Elements
 
-### Farben
-- **Primär (Kubernetes-Blau)**: `#326CE5`
-- **Sekundär (Dunkelblau)**: `#1A4D8F`
-- **Akzent (Gold/Gelb)**: `#FFD700`, `#FFA500`
-- **Routing-Pfade**: 
-  - Grün: `#00FF7F` (Primäre Route/Table 100)
-  - Rot: `#FF6B6B` (Sekundäre Route/Table 200)
-- **Text**: `#FFFFFF` (Weiß), `#E0E0E0` (Hellgrau)
+### Colors
+- **Primary (Kubernetes Blue)**: `#326CE5`
+- **Secondary (Dark Blue)**: `#1A4D8F`
+- **Accent (Gold/Yellow)**: `#FFD700`, `#FFA500`
+- **Routing Paths**: 
+  - Green: `#00FF7F` (Primary Route/Table 100)
+  - Red: `#FF6B6B` (Secondary Route/Table 200)
+- **Text**: `#FFFFFF` (White), `#E0E0E0` (Light Gray)
 
-### Symbolik
-- **Netzwerk-Knoten (Goldene Kreise)**: Repräsentieren Kubernetes-Nodes und Services
-- **Verbindungslinien**: Symbolisieren Netzwerk-Verbindungen
-- **Gestrichelte Ringe**: Repräsentieren Policy-Bereiche/CIDR-Ranges
-- **Routing-Pfeile**: 
-  - Grüner Pfeil → Routing-Tabelle 100
-  - Roter Pfeil → Routing-Tabelle 200
-  - Zeigen Policy-Based Routing
+### Symbolism
+- **Network Nodes (Golden Circles)**: Represent Kubernetes Nodes and Services
+- **Connection Lines**: Symbolize network connections
+- **Dashed Rings**: Represent policy areas/CIDR ranges
+- **Routing Arrows**: 
+  - Green Arrow → Routing Table 100
+  - Red Arrow → Routing Table 200
+  - Show Policy-Based Routing
 
-## Verwendung
+## Usage
 
 ### In Markdown (GitHub README)
 ```markdown
@@ -70,9 +45,9 @@ Beide Logos nutzen moderne SVG+CSS Animationen für eine dynamische Darstellung:
 <img src="docs/logo.svg" alt="IP Rule Operator" width="200"/>
 ```
 
-### Für OLM/Operator Catalog
+### For OLM/Operator Catalog
 
-Die `logo-catalog.svg` Datei sollte im Bundle-Metadata referenziert werden:
+The `logo-catalog.svg` file should be referenced in the bundle metadata:
 
 **config/manifests/bases/ip-rule-operator.clusterserviceversion.yaml**:
 ```yaml
@@ -87,7 +62,7 @@ spec:
     mediatype: image/svg+xml
 ```
 
-#### Base64-Encoding für OLM
+#### Base64 Encoding for OLM
 
 ```bash
 # Linux/Mac/WSL
@@ -97,35 +72,36 @@ base64 -w 0 docs/logo-catalog.svg
 [Convert]::ToBase64String([IO.File]::ReadAllBytes("docs\logo-catalog.svg"))
 ```
 
-## PNG-Export (Optional)
+## PNG Export (Optional)
 
-Falls PNG-Versionen benötigt werden:
+If PNG versions are needed:
 
 ```bash
-# Mit Inkscape
+# With Inkscape
 inkscape logo.svg --export-type=png --export-filename=logo.png --export-width=512 --export-height=512
 
-# Mit ImageMagick
+# With ImageMagick
 convert -background none logo.svg -resize 512x512 logo.png
 
-# Für Catalog (mit Hintergrund)
+# For Catalog (with background)
 convert logo-catalog.svg -resize 256x256 logo-catalog.png
 ```
 
-## Empfohlene Größen
+## Recommended Sizes
 
-| Verwendung | Größe | Format | Datei |
-|------------|-------|--------|-------|
+| Usage | Size | Format | File |
+|-------|------|--------|------|
 | GitHub README Header | 200x200px | SVG | logo.svg |
 | OperatorHub Catalog | 256x256px | SVG/PNG | logo-catalog.svg |
-| Dokumentation | 150-200px | SVG | logo.svg |
-| Website/Blog (klein) | 64x64px | PNG | logo-64.png |
-| Website/Blog (mittel) | 128x128px | PNG | logo-128.png |
-| Website/Blog (groß) | 512x512px | PNG | logo-512.png |
+| Documentation | 150-200px | SVG | logo.svg |
+| Website/Blog (small) | 64x64px | PNG | logo-64.png |
+| Website/Blog (medium) | 128x128px | PNG | logo-128.png |
+| Website/Blog (large) | 512x512px | PNG | logo-512.png |
 | Favicon | 32x32px | PNG/ICO | favicon.ico |
 
-## Lizenz
+## License
 
-Die Logos sind Teil des IP Rule Operator Projekts und unterliegen der Apache 2.0 Lizenz.
+The logos are part of the IP Rule Operator project and are subject to the Apache 2.0 License.
 
 Copyright 2025 Marius Bertram.
+

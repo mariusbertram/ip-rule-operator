@@ -135,7 +135,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				Name:            "agent",
 				Image:           image,
 				ImagePullPolicy: corev1.PullIfNotPresent,
-				SecurityContext: &corev1.SecurityContext{AllowPrivilegeEscalation: boolPtr(false), Capabilities: &corev1.Capabilities{Add: []corev1.Capability{"NET_ADMIN"}}, RunAsNonRoot: boolPtr(true), RunAsUser: int64Ptr(0)},
+				SecurityContext: &corev1.SecurityContext{AllowPrivilegeEscalation: boolPtr(false), Capabilities: &corev1.Capabilities{Add: []corev1.Capability{"NET_ADMIN"}}, RunAsNonRoot: boolPtr(true), RunAsUser: int64Ptr(65532)},
 				Env: []corev1.EnvVar{
 					{Name: "NODE_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
 					{Name: "RECONCILE_PERIOD", Value: "10s"},

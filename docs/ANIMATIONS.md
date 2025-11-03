@@ -1,32 +1,41 @@
-# Logo-Animationen - Technische Dokumentation
+# 🎬 IP Rule Operator - Animation Documentation
 
-## 🎬 Übersicht
+This document provides a comprehensive overview of all animation effects used in the IP Rule Operator logos.
 
-Die IP Rule Operator Logos verwenden moderne SVG+CSS Animationen, um eine dynamische und aufmerksamkeitsstarke Darstellung zu bieten. Alle Animationen laufen direkt im Browser ohne externe Abhängigkeiten.
+---
 
-## 📊 Animationstypen
+## 📚 Table of Contents
 
-### 1. Pulse Animation (Pulsieren)
-Elemente werden größer/kleiner und ändern ihre Opacity:
+1. [Animation Types](#animation-types)
+2. [Technical Details](#technical-details)
+3. [Performance Considerations](#performance-considerations)
+4. [Customization](#customization)
+
+---
+
+## Animation Types
+
+### 1. Pulse Animation (Pulsating Rings)
+Network rings pulsate and change size and opacity:
 
 ```css
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.6; }
 }
 ```
 
-**Verwendung:**
-- Netzwerkringe
-- K8s Badge (mit Rotation)
+**Usage:**
+- Outer ring (network boundaries)
+- Inner ring (policy areas)
 
-**Dauer:** 3-4 Sekunden
+**Duration:** 3-4 seconds (depending on ring)
 **Timing:** ease-in-out
 
 ---
 
-### 2. Dash Animation (Laufendes Strichmuster)
-Gestrichelte Linien rotieren um ihre Form:
+### 2. Dash Animation (Running Dash Pattern)
+Dashed lines rotate around their shape:
 
 ```css
 @keyframes dash {
@@ -34,16 +43,16 @@ Gestrichelte Linien rotieren um ihre Form:
 }
 ```
 
-**Verwendung:**
-- Ring-Grenzen (outer & inner rings)
+**Usage:**
+- Ring borders (outer & inner rings)
 
-**Dauer:** 4-8 Sekunden (abhängig vom Ring)
+**Duration:** 4-8 seconds (depending on ring)
 **Timing:** linear
 
 ---
 
-### 3. Node Glow (Leuchtende Knoten)
-Netzwerk-Nodes bekommen einen pulsierenden Schatten-Effekt:
+### 3. Node Glow (Glowing Nodes)
+Network nodes get a pulsating shadow effect:
 
 ```css
 @keyframes nodeGlow {
@@ -52,17 +61,17 @@ Netzwerk-Nodes bekommen einen pulsierenden Schatten-Effekt:
 }
 ```
 
-**Verwendung:**
-- Alle Netzwerk-Knoten (goldene Kreise)
+**Usage:**
+- All network nodes (golden circles)
 
-**Dauer:** 2-2.5 Sekunden
+**Duration:** 2-2.5 seconds
 **Timing:** ease-in-out
-**Effekt:** Goldener → Oranger Glow
+**Effect:** Golden → Orange Glow
 
 ---
 
-### 4. Connection Pulse (Pulsierende Verbindungen)
-Verbindungslinien ändern Dicke und Opacity:
+### 4. Connection Pulse (Pulsating Connections)
+Connection lines change thickness and opacity:
 
 ```css
 @keyframes connectionPulse {
@@ -71,17 +80,17 @@ Verbindungslinien ändern Dicke und Opacity:
 }
 ```
 
-**Verwendung:**
-- Alle Netzwerk-Verbindungslinien
+**Usage:**
+- All network connection lines
 
-**Dauer:** 2 Sekunden
+**Duration:** 2 seconds
 **Timing:** ease-in-out
-**Verzögerung:** Zeitversetzt (0s, 0.3s, 0.6s, 0.9s, 1.2s)
+**Delay:** Time-shifted (0s, 0.3s, 0.6s, 0.9s, 1.2s)
 
 ---
 
-### 5. Arrow Flow (Fließende Pfeile)
-Routing-Pfeile bewegen sich horizontal:
+### 5. Arrow Flow (Flowing Arrows)
+Routing arrows move horizontally:
 
 ```css
 @keyframes arrowFlow {
@@ -91,18 +100,18 @@ Routing-Pfeile bewegen sich horizontal:
 }
 ```
 
-**Verwendung:**
-- Grüner Pfeil (Table 100)
-- Roter Pfeil (Table 200)
+**Usage:**
+- Green arrow (Table 100)
+- Red arrow (Table 200)
 
-**Dauer:** 1.5-2 Sekunden
+**Duration:** 1.5-2 seconds
 **Timing:** ease-in-out
-**Verzögerung:** Grün: 0s, Rot: 0.5-0.6s
+**Delay:** Green: 0s, Red: 0.5-0.6s
 
 ---
 
-### 6. Text Glow (Leuchtender Text)
-Text-Elemente bekommen einen farbwechselnden Glow:
+### 6. Text Glow (Glowing Text)
+Text elements get a color-changing glow:
 
 ```css
 @keyframes textGlow {
@@ -111,19 +120,19 @@ Text-Elemente bekommen einen farbwechselnden Glow:
 }
 ```
 
-**Verwendung:**
-- "IP RULE" Titel
-- "OPERATOR" Untertitel
-- "TABLE 100" / "TABLE 200" Labels
+**Usage:**
+- "IP RULE" title
+- "OPERATOR" subtitle
+- "TABLE 100" / "TABLE 200" labels
 
-**Dauer:** 2.5-4 Sekunden
+**Duration:** 2.5-4 seconds
 **Timing:** ease-in-out
-**Effekt:** Weiß → Grün (beim Titel)
+**Effect:** White → Green (for title)
 
 ---
 
 ### 7. K8s Badge (Kubernetes Badge)
-Der K8s-Badge rotiert, skaliert und leuchtet in verschiedenen Farben:
+The K8s badge rotates, scales, and glows in different colors:
 
 ```css
 @keyframes k8sBadge {
@@ -146,25 +155,25 @@ Der K8s-Badge rotiert, skaliert und leuchtet in verschiedenen Farben:
 }
 ```
 
-**Verwendung:**
-- K8s Badge (nur Catalog-Logo, oben rechts)
+**Usage:**
+- K8s Badge (Catalog logo only, top right)
 
-**Dauer:** 3 Sekunden
+**Duration:** 3 seconds
 **Timing:** ease-in-out
-**Effekt:** 
-- Rotation: ±8° für dynamische Bewegung
-- Skalierung: 1.0 → 1.15 für Aufmerksamkeit
-- Glow: Weiß → Grün → Weiß → Blau (Kubernetes-Farben)
-**Design:** Größerer Badge (r=20px) mit Kubernetes-blauem Hintergrund und weißem Ring
+**Effect:** 
+- Rotation: ±8° for dynamic movement
+- Scaling: 1.0 → 1.15 for attention
+- Glow: White → Green → White → Blue (Kubernetes colors)
+**Design:** Larger badge (r=20px) with Kubernetes-blue background and white ring
 
 ---
 
-## 📋 Animations-Übersicht nach Logo
+## 📋 Animation Overview by Logo
 
-### Standard-Logo (logo.svg)
+### Standard Logo (logo.svg)
 
-| Element | Animation | Dauer | Verzögerung |
-|---------|-----------|-------|-------------|
+| Element | Animation | Duration | Delay |
+|---------|-----------|----------|-------|
 | Outer Ring | pulse + dash | 3s + 4s | 0s |
 | Nodes (5x) | nodeGlow | 2s | 0s, 0.2s, 0.4s, 0.6s, 0.8s |
 | Connections (5x) | connectionPulse | 2s | 0s, 0.3s, 0.6s, 0.9s, 1.2s |
@@ -173,14 +182,14 @@ Der K8s-Badge rotiert, skaliert und leuchtet in verschiedenen Farben:
 | Title Text | textGlow | 3s | 0s |
 | Subtitle Text | textGlow | 3s | 0.3s |
 
-**Gesamt-Effekt:** Sanft pulsierende Netzwerk-Darstellung mit fließenden Routing-Pfeilen
+**Overall Effect:** Smoothly pulsating network representation with flowing routing arrows
 
 ---
 
-### Catalog-Logo (logo-catalog.svg)
+### Catalog Logo (logo-catalog.svg)
 
-| Element | Animation | Dauer | Verzögerung |
-|---------|-----------|-------|-------------|
+| Element | Animation | Duration | Delay |
+|---------|-----------|----------|-------|
 | Outer Ring | pulse + dash | 4s + 8s | 0s |
 | Inner Ring | pulse + dash | 4s + 6s | 0.5s |
 | Nodes (5x) | nodeGlow | 2.5s | 0s, 0.2s, 0.4s, 0.6s, 0.8s |
@@ -191,40 +200,40 @@ Der K8s-Badge rotiert, skaliert und leuchtet in verschiedenen Farben:
 | TABLE 200 Label | textGlow | 2.5s | 0.4s |
 | Title "IP RULE" | titlePulse | 4s | 0s |
 | Subtitle "OPERATOR" | titlePulse | 4s | 0.5s |
-| K8s Badge (VERBESSERT) | k8sBadge | 3s | 0s |
+| K8s Badge (IMPROVED) | k8sBadge | 3s | 0s |
 
-**Gesamt-Effekt:** Intensivere, detaillierte Animation mit mehr Effekten für OperatorHub. Der K8s-Badge ist jetzt größer (r=20px), deutlich sichtbar mit Kubernetes-blauem Hintergrund und rotiert/pulsiert mit farbwechselndem Glow (weiß→grün→blau).
+**Overall Effect:** More intensive, detailed animation with more effects for OperatorHub. The K8s badge is now larger (r=20px), clearly visible with Kubernetes-blue background and rotates/pulsates with color-changing glow (white→green→blue).
 
 ---
 
-## 🎯 Design-Prinzipien
+## 🎨 Design Principles
 
-### Timing & Koordination
-- **Zeitversätze**: Elemente animieren zeitversetzt für natürliche Welleneffekte
-- **Geschwindigkeit**: Langsame, sanfte Animationen (2-4s) vermeiden Hektik
-- **Loops**: Endlose Wiederholung (`infinite`) für kontinuierliche Bewegung
+### Timing & Coordination
+- **Time Offsets**: Elements animate time-shifted for natural wave effects
+- **Speed**: Slow, smooth animations (2-4s) avoid hectic
+- **Loops**: Infinite repetition (`infinite`) for continuous movement
 
 ### Performance
-- **Hardware-Beschleunigung**: CSS-Transformationen nutzen GPU
-- **Keine JavaScript**: Reine SVG+CSS für minimale Overhead
-- **Effizient**: Kleine Dateigrößen (<10KB pro Logo)
+- **Hardware Acceleration**: CSS transformations use GPU
+- **No JavaScript**: Pure SVG+CSS for minimal overhead
+- **Efficient**: Small file sizes (<10KB per logo)
 
-### Barrierefreiheit
-- **Subtil**: Keine blinkenden Effekte oder schnelle Bewegungen
-- **Deaktivierbar**: Browser können Animationen mit `prefers-reduced-motion` deaktivieren
+### Accessibility
+- **Subtle**: No flashing effects or fast movements
+- **Disableable**: Browsers can disable animations with `prefers-reduced-motion`
 
-### Browser-Kompatibilität
-- ✅ Chrome/Edge: Volle Unterstützung
-- ✅ Firefox: Volle Unterstützung
-- ✅ Safari: Volle Unterstützung
-- ✅ Mobile Browser: Volle Unterstützung
+### Browser Compatibility
+- ✅ Chrome/Edge: Full support
+- ✅ Firefox: Full support
+- ✅ Safari: Full support
+- ✅ Mobile Browsers: Full support
 
 ---
 
-## 🔧 Anpassungen
+## 🔧 Customization
 
-### Animation deaktivieren
-Füge dies zum SVG-Style hinzu:
+### Disable Animations
+Add this to the SVG style:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -234,52 +243,52 @@ Füge dies zum SVG-Style hinzu:
 }
 ```
 
-### Geschwindigkeit ändern
-Ändere die Dauer-Parameter:
+### Change Speed
+Modify the duration parameters:
 
 ```css
 .ring { animation: pulse 3s ease-in-out infinite; }
-/* Schneller: */
+/* Faster: */
 .ring { animation: pulse 1.5s ease-in-out infinite; }
-/* Langsamer: */
+/* Slower: */
 .ring { animation: pulse 6s ease-in-out infinite; }
 ```
 
-### Neue Animationen hinzufügen
-1. Definiere Keyframes im `<style>` Block
-2. Weise Animation einer CSS-Klasse zu
-3. Füge Klasse zum SVG-Element hinzu
+### Add New Animations
+1. Define keyframes in `<style>` block
+2. Assign animation to a CSS class
+3. Add class to SVG element
 
 ---
 
-## 📊 Performance-Metriken
+## 📊 Performance Metrics
 
-- **Dateigrößen:**
-  - logo.svg: ~8KB (mit Animationen)
-  - logo-catalog.svg: ~10KB (mit Animationen)
+- **File Sizes:**
+  - logo.svg: ~8KB (with animations)
+  - logo-catalog.svg: ~10KB (with animations)
 
 - **Rendering:**
-  - 60 FPS auf modernen Geräten
-  - GPU-beschleunigt
-  - Kein JavaScript-Overhead
+  - 60 FPS on modern devices
+  - GPU-accelerated
+  - No JavaScript overhead
 
-- **Ladezeit:**
-  - Instant bei eingebettetem SVG
-  - <50ms bei externer Referenz
+- **Load Time:**
+  - Instant with embedded SVG
+  - <50ms with external reference
 
 ---
 
 ## 🚀 Best Practices
 
-1. **Im README**: Verwende das Standard-Logo (logo.svg)
-2. **In OperatorHub**: Verwende das Catalog-Logo (logo-catalog.svg)
-3. **Base64-Encoding**: Funktioniert mit Animationen (für OLM)
-4. **Responsive**: SVG skaliert perfekt auf allen Größen
-5. **Dark/Light Mode**: Beide Logos funktionieren auf dunklem Hintergrund
+1. **In README**: Use the standard logo (logo.svg)
+2. **In OperatorHub**: Use the catalog logo (logo-catalog.svg)
+3. **Base64 Encoding**: Works with animations (for OLM)
+4. **Responsive**: SVG scales perfectly at all sizes
+5. **Dark/Light Mode**: Both logos work on dark backgrounds
 
 ---
 
-## 📝 Beispiel-Verwendung
+## 💡 Example Usage
 
 ### In HTML/Markdown
 ```html
@@ -291,7 +300,7 @@ Füge dies zum SVG-Style hinzu:
 ![IP Rule Operator](docs/logo.svg)
 ```
 
-### Mit Base64 in OLM
+### With Base64 in OLM
 ```yaml
 spec:
   icon:
@@ -299,12 +308,12 @@ spec:
     mediatype: image/svg+xml
 ```
 
-Die Animationen bleiben in allen Formaten erhalten! 🎉
+Animations are preserved in all formats! 🎉
 
 ---
 
 <div align="center">
   <img src="logo.svg" alt="Animated Logo" width="200"/>
-  <p><em>Jetzt mit lebendigen Animationen! ✨</em></p>
+  <p><em>Now with living animations! ✨</em></p>
 </div>
 

@@ -62,7 +62,7 @@ get_image_digest() {
 
     # Try podman inspect (requires image to be pulled)
     if command -v podman &> /dev/null; then
-        digest=$(podman inspect --format='{{index .RepoDigests 0}}' "${image}" 2>/dev/null || echo "")
+        digest=$( "${image}" 2>/dev/null || echo "")
         if [ -n "$digest" ]; then
             echo "$digest"
             return 0
