@@ -36,4 +36,5 @@ jobs:
           # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
           upload-result: false
           # quick-fixes available in Ultimate and Ultimate Plus plans
-          push-fixes: 'none'
+          push-fixes: 'pull-request'
+          args: --images jetbrains/qodana-go:2025.2-eap
