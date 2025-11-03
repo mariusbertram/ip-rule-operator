@@ -277,12 +277,14 @@ make deploy IMG=${IMG}
 
 #### Step 3: Create Agent DaemonSet
 
+**Important**: The Agent resource MUST be named `agent` - this is enforced by CRD validation.
+
 ```bash
 cat <<EOF | kubectl apply -f -
 apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
-  name: iprule-agent
+  name: agent  # MUST be named "agent"
   namespace: ip-rule-operator-system
 spec:
   # Optional: Specific image
@@ -407,12 +409,14 @@ oc get crds | grep api.operator.brtrm.dev
 
 After successful operator installation:
 
+**Important**: The Agent resource MUST be named `agent` - this is enforced by CRD validation.
+
 ```bash
 cat <<EOF | oc apply -f -
 apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
-  name: iprule-agent
+  name: agent  # MUST be named "agent"
   namespace: openshift-operators
 spec:
   nodeSelector:
