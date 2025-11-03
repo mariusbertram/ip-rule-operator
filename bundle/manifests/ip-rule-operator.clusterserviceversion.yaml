@@ -37,7 +37,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-11-03T21:28:33Z"
+    createdAt: "2025-11-03T21:36:26Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1

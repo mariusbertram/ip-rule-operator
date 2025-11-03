@@ -296,7 +296,7 @@ spec:
 apiVersion: api.operator.brtrm.dev/v1alpha1
 kind: Agent
 metadata:
-  name: test-agent
+  name: agent
   namespace: %s
 spec:
   image: ghcr.io/mariusbertram/iprule-agent:latest
@@ -310,10 +310,10 @@ spec:
 
 			By("verifying the Agent was created")
 			verifyAgentCreated := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get", "agent", "test-agent", "-n", namespace, "-o", "jsonpath={.metadata.name}")
+				cmd := exec.Command("kubectl", "get", "agent", "agent", "-n", namespace, "-o", "jsonpath={.metadata.name}")
 				output, err := utils.Run(cmd)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(output).To(Equal("test-agent"))
+				g.Expect(output).To(Equal("agent"))
 			}
 			Eventually(verifyAgentCreated, 30*time.Second).Should(Succeed())
 
@@ -329,7 +329,7 @@ spec:
 
 			By("verifying the Agent status is updated")
 			verifyAgentStatus := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get", "agent", "test-agent",
+				cmd := exec.Command("kubectl", "get", "agent", "agent",
 					"-n", namespace,
 					"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}")
 				output, err := utils.Run(cmd)
@@ -340,7 +340,7 @@ spec:
 			Eventually(verifyAgentStatus, 2*time.Minute).Should(Succeed())
 
 			By("cleaning up the Agent")
-			cmd = exec.Command("kubectl", "delete", "agent", "test-agent", "-n", namespace)
+			cmd = exec.Command("kubectl", "delete", "agent", "agent", "-n", namespace)
 			_, _ = utils.Run(cmd)
 		})
 
