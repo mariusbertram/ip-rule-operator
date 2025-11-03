@@ -74,40 +74,40 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Kubernetes Cluster                        │
-│                                                                   │
+│                        Kubernetes Cluster                       │
+│                                                                 │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │                     Control Plane                           │ │
-│  │                                                              │ │
+│  │                     Control Plane                          │ │
+│  │                                                            │ │
 │  │  ┌──────────────────────────────────────────────────────┐  │ │
 │  │  │         IP Rule Operator (Controller)                │  │ │
-│  │  │                                                       │  │ │
+│  │  │                                                      │  │ │
 │  │  │  1. Watches Services (LoadBalancer)                  │  │ │
-│  │  │  2. Matches LB-IPs against IPRule CRDs              │  │ │
+│  │  │  2. Matches LB-IPs against IPRule CRDs               │  │ │
 │  │  │  3. Generates IPRuleConfig CRDs                      │  │ │
 │  │  │  4. Manages Agent DaemonSet                          │  │ │
 │  │  └──────────────────────────────────────────────────────┘  │ │
-│  │                            │                                 │ │
-│  │                            │ watches                         │ │
-│  │                            ▼                                 │ │
+│  │                            │                               │ │
+│  │                            │ watches                       │ │
+│  │                            ▼                               │ │
 │  │  ┌──────────────────────────────────────────────────────┐  │ │
-│  │  │              Custom Resources (CRDs)                  │  │ │
-│  │  │                                                       │  │ │
-│  │  │  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │  │ │
-│  │  │  │   IPRule    │  │ IPRuleConfig │  │   Agent    │ │  │ │
-│  │  │  │ (User-def.) │  │ (Generated)  │  │ (Deploy)   │ │  │ │
-│  │  │  │             │  │              │  │            │ │  │ │
-│  │  │  │ cidr: ...   │  │ serviceIP    │  │ image: ... │ │  │ │
-│  │  │  │ table: 100  │  │ table: 100   │  │ nodeSelect.│ │  │ │
-│  │  │  │ priority    │  │ state: ...   │  │            │ │  │ │
-│  │  │  └─────────────┘  └──────────────┘  └────────────┘ │  │ │
+│  │  │              Custom Resources (CRDs)                 │  │ │
+│  │  │                                                      │  │ │
+│  │  │  ┌─────────────┐  ┌──────────────┐  ┌────────────┐   │  │ │
+│  │  │  │   IPRule    │  │ IPRuleConfig │  │   Agent    │   │  │ │
+│  │  │  │ (User-def.) │  │ (Generated)  │  │ (Deploy)   │   │  │ │
+│  │  │  │             │  │              │  │            │   │  │ │
+│  │  │  │ cidr: ...   │  │ serviceIP    │  │ image: ... │   │  │ │
+│  │  │  │ table: 100  │  │ table: 100   │  │ nodeSelect.│   │  │ │
+│  │  │  │ priority    │  │ state: ...   │  │            │   │  │ │
+│  │  │  └─────────────┘  └──────────────┘  └────────────┘   │  │ │
 │  │  └──────────────────────────────────────────────────────┘  │ │
 │  └────────────────────────────────────────────────────────────┘ │
-│                                                                   │
+│                                                                 │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │                        Worker Nodes                         │ │
-│  │                                                              │ │
-│  │  Node 1                Node 2                Node 3          │ │
+│  │                        Worker Nodes                        │ │
+│  │                                                            │ │
+│  │  Node 1                Node 2                Node 3        │ │
 │  │  ┌──────────┐         ┌──────────┐         ┌──────────┐    │ │
 │  │  │  Agent   │         │  Agent   │         │  Agent   │    │ │
 │  │  │  Pod     │         │  Pod     │         │  Pod     │    │ │
@@ -122,25 +122,25 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 │  │  │ via      │         │ via      │         │ via      │    │ │
 │  │  │ netlink  │         │ netlink  │         │ netlink  │    │ │
 │  │  └────┬─────┘         └────┬─────┘         └────┬─────┘    │ │
-│  │       │                    │                    │           │ │
-│  │       ▼                    ▼                    ▼           │ │
+│  │       │                    │                    │          │ │
+│  │       ▼                    ▼                    ▼          │ │
 │  │  ┌─────────────────────────────────────────────────────┐   │ │
 │  │  │          Linux Kernel Routing Tables                │   │ │
-│  │  │                                                      │   │ │
+│  │  │                                                     │   │ │
 │  │  │  ip rule show:                                      │   │ │
-│  │  │    1000: from 10.96.1.50 lookup 100                │   │ │
-│  │  │    1000: from 10.96.1.51 lookup 200                │   │ │
-│  │  │    ...                                               │   │ │
+│  │  │    1000: from 10.96.1.50 lookup 100                 │   │ │
+│  │  │    1000: from 10.96.1.51 lookup 200                 │   │ │
+│  │  │    ...                                              │   │ │
 │  │  └─────────────────────────────────────────────────────┘   │ │
 │  └────────────────────────────────────────────────────────────┘ │
-└───────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Ressourcen-Interaktion
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    Workflow & Interaktionen                       │
+│                    Workflow & Interaktionen                      │
 └──────────────────────────────────────────────────────────────────┘
 
   User/Admin                     Kubernetes API
@@ -156,25 +156,25 @@ ip route add default via 192.168.1.1 dev eth1 table 100
       │                                │
                                        │
                       ┌────────────────┴────────────────┐
-                      │                                  │
-                      ▼                                  │
-           IP Rule Controller                            │
-                      │                                  │
-        3. Watches Services & IPRules                    │
-                      │                                  │
-        4. Service gets LB IP: 192.168.1.10              │
-           ClusterIP: 10.96.1.50                         │
-                      │                                  │
+                      │                                 │
+                      ▼                                 │
+           IP Rule Controller                           │
+                      │                                 │
+        3. Watches Services & IPRules                   │
+                      │                                 │
+        4. Service gets LB IP: 192.168.1.10             │
+           ClusterIP: 10.96.1.50                        │
+                      │                                 │
         5. Matches: 192.168.1.10 ∈ 192.168.1.0/24       │
-                      │                                  │
-        6. Creates IPRuleConfig ────────────────────────>│
-           - name: iprc-10-96-1-50                       │
-           - serviceIP: 10.96.1.50                       │
-           - table: 100                                  │
-           - priority: 1000                              │
-           - state: present                              │
-                                                         │
-                      ┌──────────────────────────────────┘
+                      │                                 │
+        6. Creates IPRuleConfig ───────────────────────>│
+           - name: iprc-10-96-1-50                      │
+           - serviceIP: 10.96.1.50                      │
+           - table: 100                                 │
+           - priority: 1000                             │
+           - state: present                             │
+                                                        │
+                      ┌─────────────────────────────────┘
                       │
                       ▼
               Agent Controller

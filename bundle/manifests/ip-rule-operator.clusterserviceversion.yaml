@@ -37,7 +37,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-11-03T00:13:35Z"
+    createdAt: "2025-11-03T08:00:53Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1
@@ -224,8 +224,8 @@ spec:
                       - /manager
                     env:
                       - name: RELATED_IMAGE_AGENT_IMAGE
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:b3ffa2b99f846f091a397afd15ed7cfea317cba83d167fff842e58a126998907
-                    image: ghcr.io/mariusbertram/iprule-controller@sha256:4d181da23767a3c3958aadbdd1927e0e95fdfc5e8433482a268bf8b74efba75f
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:7bc127c53a97dc92f81b37b4607787f9dec439301597e7be296e3a8b0c84b453
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:a57b18a021ee63c9cfa49d8c1b1511ff764f80063c6fa54f2a38c9dbb55b7530
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -314,10 +314,10 @@ spec:
     name: Marius Bertram
     url: github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:b3ffa2b99f846f091a397afd15ed7cfea317cba83d167fff842e58a126998907
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:7bc127c53a97dc92f81b37b4607787f9dec439301597e7be296e3a8b0c84b453
       name: agent-image
-    - image: ghcr.io/mariusbertram/iprule-controller@sha256:4d181da23767a3c3958aadbdd1927e0e95fdfc5e8433482a268bf8b74efba75f
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:a57b18a021ee63c9cfa49d8c1b1511ff764f80063c6fa54f2a38c9dbb55b7530
       name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:b3ffa2b99f846f091a397afd15ed7cfea317cba83d167fff842e58a126998907
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:7bc127c53a97dc92f81b37b4607787f9dec439301597e7be296e3a8b0c84b453
       name: agent_image
   version: 0.0.1
