@@ -161,6 +161,9 @@ spec:
                 type: integer
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: Agent resource name must be 'agent'
+          rule: self.metadata.name == 'agent'
     served: true
     storage: true
     subresources:

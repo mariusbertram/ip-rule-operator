@@ -8,8 +8,8 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: ip-rule-leader-election-role
+  name: leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: ip-rule-controller-manager
+  name: controller-manager
   namespace: system

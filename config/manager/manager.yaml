@@ -5,7 +5,7 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: ip-rule-operator
     app.kubernetes.io/managed-by: kustomize
-  name: ip-rule
+  name: system
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -97,5 +97,5 @@ spec:
             memory: 64Mi
         volumeMounts: []
       volumes: []
-      serviceAccountName: ip-rule-controller-manager
+      serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

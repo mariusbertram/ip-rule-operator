@@ -51,6 +51,8 @@ type AgentStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:validation:XValidation:rule="self.metadata.name == 'agent'",message="Agent resource name must be 'agent'"
+// +kubebuilder:resource:scope=Namespaced
 
 // Agent is the Schema for the agents API.
 type Agent struct {

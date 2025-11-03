@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: iprule-agent-role
+  name: agent-role
   labels:
     app.kubernetes.io/name: ip-rule-operator
 rules:

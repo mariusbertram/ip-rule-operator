@@ -42,7 +42,7 @@ spec:
   - Network
   links:
   - name: Ip Rule Operator
-    url: https://ip-rule-operator.domain
+    url: https://github.com/mariusbertram/ip-rule-operator
   maintainers:
   - email: marius@brtrm.de
     name: Marius Bertram

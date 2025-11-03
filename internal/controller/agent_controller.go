@@ -64,25 +64,21 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	agentList := &apiv1alpha1.AgentList{}
-	// TODO: Switch to only one name allowed
-	if err := r.List(ctx, agentList); err == nil {
-		if len(agentList.Items) > 1 {
-			names := make([]string, 0, len(agentList.Items))
-			for _, a := range agentList.Items {
-				names = append(names, a.Name)
-			}
-			sort.Strings(names)
-			active := names[0]
-			if agent.Name != active {
-				// Different instance -> set status and exit
-				cond := metav1.Condition{Type: string(apiv1alpha1.AgentConditionReady), Status: metav1.ConditionFalse, Reason: "InactiveInstance", Message: fmt.Sprintf("Another Agent instance '%s' is active", active), ObservedGeneration: agent.Generation, LastTransitionTime: metav1.Now()}
-				agent.Status.ObservedGeneration = agent.Generation
-				agent.Status.Conditions = upsertCondition(agent.Status.Conditions, cond)
-				_ = r.Status().Update(ctx, agent)
-				return ctrl.Result{}, nil
-			}
+	// Verify that the Agent resource is named "agent"
+	if agent.Name != "agent" {
+		logger.Error(fmt.Errorf("invalid agent name"), "Agent resource must be named 'agent'", "name", agent.Name)
+		cond := metav1.Condition{
+			Type:               string(apiv1alpha1.AgentConditionReady),
+			Status:             metav1.ConditionFalse,
+			Reason:             "InvalidName",
+			Message:            "Agent resource must be named 'agent'",
+			ObservedGeneration: agent.Generation,
+			LastTransitionTime: metav1.Now(),
 		}
+		agent.Status.ObservedGeneration = agent.Generation
+		agent.Status.Conditions = upsertCondition(agent.Status.Conditions, cond)
+		_ = r.Status().Update(ctx, agent)
+		return ctrl.Result{}, nil
 	}
 
 	// Desired DaemonSet name

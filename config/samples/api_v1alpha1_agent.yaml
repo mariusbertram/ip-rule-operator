@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/name: ip-rule-operator
     app.kubernetes.io/managed-by: kustomize
-  name: agent-sample
+  name: agent  # NOTE: The name MUST be "agent" - this is enforced by validation
 spec:
   nodeSelector:
     kubernetes.io/os: linux
