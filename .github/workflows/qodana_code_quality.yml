@@ -37,4 +37,3 @@ jobs:
           upload-result: false
           # quick-fixes available in Ultimate and Ultimate Plus plans
           push-fixes: 'pull-request'
-          args: --linter jetbrains/qodana-go:latest
