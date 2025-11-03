@@ -37,4 +37,4 @@ jobs:
           upload-result: false
           # quick-fixes available in Ultimate and Ultimate Plus plans
           push-fixes: 'pull-request'
-          args: --images jetbrains/qodana-go:2025.2-eap
+          args: --image jetbrains/qodana-go:latest
