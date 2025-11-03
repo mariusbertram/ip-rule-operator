@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -32,41 +33,52 @@ import (
 
 var _ = Describe("Agent Controller", func() {
 	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+		const resourceName = "test-agent"
 
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
-		agent := &apiv1alpha1.Agent{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind Agent")
-			err := k8sClient.Get(ctx, typeNamespacedName, agent)
-			if err != nil && errors.IsNotFound(err) {
-				resource := &apiv1alpha1.Agent{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
+			By("creating the Agent custom resource")
+			resource := &apiv1alpha1.Agent{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      resourceName,
+					Namespace: "default",
+				},
+				Spec: apiv1alpha1.AgentSpec{
+					Image: "iprule-agent:test",
+					NodeSelector: map[string]string{
+						"kubernetes.io/os": "linux",
 					},
-					// TODO(user): Specify other spec details if needed.
-				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				},
+			}
+			err := k8sClient.Create(ctx, resource)
+			if err != nil && !errors.IsAlreadyExists(err) {
+				Expect(err).NotTo(HaveOccurred())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
+			By("Cleanup the Agent resource")
 			resource := &apiv1alpha1.Agent{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			}
 
-			By("Cleanup the specific resource instance Agent")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			By("Cleanup the DaemonSet if exists")
+			ds := &appsv1.DaemonSet{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "iprule-agent", Namespace: "default"}, ds)
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, ds)).To(Succeed())
+			}
 		})
-		It("should successfully reconcile the resource", func() {
+
+		It("should successfully reconcile and create DaemonSet", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &AgentReconciler{
 				Client: k8sClient,
@@ -77,8 +89,172 @@ var _ = Describe("Agent Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+
+			By("Verifying DaemonSet was created")
+			ds := &appsv1.DaemonSet{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, types.NamespacedName{
+					Name:      "iprule-agent",
+					Namespace: "default",
+				}, ds)
+			}, "10s", "500ms").Should(Succeed())
+
+			By("Verifying DaemonSet has correct configuration")
+			Expect(ds.Spec.Template.Spec.Containers).To(HaveLen(1))
+			Expect(ds.Spec.Template.Spec.Containers[0].Image).To(Equal("iprule-agent:test"))
+			Expect(ds.Spec.Template.Spec.NodeSelector).To(HaveKeyWithValue("kubernetes.io/os", "linux"))
+			Expect(ds.Spec.Template.Spec.HostNetwork).To(BeTrue())
+		})
+
+		It("should update Agent status with DaemonSet status", func() {
+			By("Reconciling the Agent")
+			controllerReconciler := &AgentReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Verifying Agent status is updated")
+			agent := &apiv1alpha1.Agent{}
+			Eventually(func() bool {
+				if err := k8sClient.Get(ctx, typeNamespacedName, agent); err != nil {
+					return false
+				}
+				return agent.Status.ObservedGeneration > 0
+			}, "10s", "500ms").Should(BeTrue())
+
+			By("Verifying Agent has conditions")
+			Expect(agent.Status.Conditions).NotTo(BeEmpty())
+			readyCond := findCondition(agent.Status.Conditions, string(apiv1alpha1.AgentConditionReady))
+			Expect(readyCond).NotTo(BeNil())
+		})
+	})
+
+	Context("When multiple Agent resources exist", func() {
+		const (
+			agent1Name = "test-agent-1"
+			agent2Name = "test-agent-2"
+		)
+
+		ctx := context.Background()
+
+		BeforeEach(func() {
+			By("creating first Agent")
+			agent1 := &apiv1alpha1.Agent{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      agent1Name,
+					Namespace: "default",
+				},
+				Spec: apiv1alpha1.AgentSpec{
+					Image: "iprule-agent:test1",
+				},
+			}
+			err := k8sClient.Create(ctx, agent1)
+			if err != nil && !errors.IsAlreadyExists(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			By("creating second Agent")
+			agent2 := &apiv1alpha1.Agent{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      agent2Name,
+					Namespace: "default",
+				},
+				Spec: apiv1alpha1.AgentSpec{
+					Image: "iprule-agent:test2",
+				},
+			}
+			err = k8sClient.Create(ctx, agent2)
+			if err != nil && !errors.IsAlreadyExists(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+
+		AfterEach(func() {
+			By("Cleanup Agent resources")
+			for _, name := range []string{agent1Name, agent2Name} {
+				agent := &apiv1alpha1.Agent{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, agent)
+				if err == nil {
+					_ = k8sClient.Delete(ctx, agent)
+				}
+			}
+
+			By("Cleanup DaemonSet if exists")
+			ds := &appsv1.DaemonSet{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: "iprule-agent", Namespace: "default"}, ds)
+			if err == nil {
+				_ = k8sClient.Delete(ctx, ds)
+			}
+		})
+
+		It("should handle multiple Agents correctly", func() {
+			By("Reconciling both Agents")
+			controllerReconciler := &AgentReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: agent1Name, Namespace: "default"},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: agent2Name, Namespace: "default"},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Verifying both Agents have conditions set")
+			Eventually(func() bool {
+				agent1 := &apiv1alpha1.Agent{}
+				agent2 := &apiv1alpha1.Agent{}
+
+				if err := k8sClient.Get(ctx, types.NamespacedName{Name: agent1Name, Namespace: "default"}, agent1); err != nil {
+					return false
+				}
+				if err := k8sClient.Get(ctx, types.NamespacedName{Name: agent2Name, Namespace: "default"}, agent2); err != nil {
+					return false
+				}
+
+				// Both should have status conditions
+				return len(agent1.Status.Conditions) > 0 && len(agent2.Status.Conditions) > 0
+			}, "10s", "500ms").Should(BeTrue())
+
+			By("Verifying alphabetically first Agent is active")
+			agent1 := &apiv1alpha1.Agent{}
+			agent2 := &apiv1alpha1.Agent{}
+
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: agent1Name, Namespace: "default"}, agent1)
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: agent2Name, Namespace: "default"}, agent2)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Since agent1Name < agent2Name alphabetically, agent1 should be active
+			cond1 := findCondition(agent1.Status.Conditions, string(apiv1alpha1.AgentConditionReady))
+			cond2 := findCondition(agent2.Status.Conditions, string(apiv1alpha1.AgentConditionReady))
+
+			Expect(cond1).NotTo(BeNil())
+			Expect(cond2).NotTo(BeNil())
+
+			// Agent1 should NOT have InactiveInstance reason (it's the active one)
+			// Agent2 should have InactiveInstance reason
+			Expect(cond1.Reason).NotTo(Equal("InactiveInstance"))
+			Expect(cond2.Reason).To(Equal("InactiveInstance"))
 		})
 	})
 })
+
+// Helper function to find a condition by type
+func findCondition(conditions []metav1.Condition, condType string) *metav1.Condition {
+	for i := range conditions {
+		if conditions[i].Type == condType {
+			return &conditions[i]
+		}
+	}
+	return nil
+}

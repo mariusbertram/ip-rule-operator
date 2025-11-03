@@ -197,8 +197,6 @@ func (r *AgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // helper functions
 func boolPtr(b bool) *bool { return &b }
 
-func intstrFromString(s string) intstr.IntOrString { return intstr.FromString(s) }
-
 func resourceMustParse(v string) resource.Quantity { return resource.MustParse(v) }
 
 func computeTemplateHash(a *apiv1alpha1.Agent, image string) string {

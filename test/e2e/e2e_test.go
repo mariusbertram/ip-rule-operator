@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -257,6 +258,91 @@ var _ = Describe("Manager", Ordered, func() {
 		})
 
 		// +kubebuilder:scaffold:e2e-webhooks-checks
+
+		It("should successfully create and reconcile IPRule custom resources", func() {
+			By("creating a sample IPRule")
+			sampleIPRule := `
+apiVersion: api.operator.brtrm.dev/v1alpha1
+kind: IPRule
+metadata:
+  name: test-iprule
+spec:
+  cidr: "10.0.0.0/24"
+  table: 100
+  priority: 1000
+`
+			cmd := exec.Command("kubectl", "apply", "-f", "-")
+			cmd.Stdin = bytes.NewBufferString(sampleIPRule)
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred(), "Failed to create IPRule")
+
+			By("verifying the IPRule was created")
+			verifyIPRuleCreated := func(g Gomega) {
+				cmd := exec.Command("kubectl", "get", "iprule", "test-iprule", "-o", "jsonpath={.metadata.name}")
+				output, err := utils.Run(cmd)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(output).To(Equal("test-iprule"))
+			}
+			Eventually(verifyIPRuleCreated, 30*time.Second).Should(Succeed())
+
+			By("cleaning up the IPRule")
+			cmd = exec.Command("kubectl", "delete", "iprule", "test-iprule")
+			_, _ = utils.Run(cmd)
+		})
+
+		It("should successfully create and reconcile Agent custom resources", func() {
+			By("creating a sample Agent in the operator namespace")
+			sampleAgent := fmt.Sprintf(`
+apiVersion: api.operator.brtrm.dev/v1alpha1
+kind: Agent
+metadata:
+  name: test-agent
+  namespace: %s
+spec:
+  image: ghcr.io/mariusbertram/iprule-agent:latest
+  nodeSelector:
+    kubernetes.io/os: linux
+`, namespace)
+			cmd := exec.Command("kubectl", "apply", "-f", "-")
+			cmd.Stdin = bytes.NewBufferString(sampleAgent)
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred(), "Failed to create Agent")
+
+			By("verifying the Agent was created")
+			verifyAgentCreated := func(g Gomega) {
+				cmd := exec.Command("kubectl", "get", "agent", "test-agent", "-n", namespace, "-o", "jsonpath={.metadata.name}")
+				output, err := utils.Run(cmd)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(output).To(Equal("test-agent"))
+			}
+			Eventually(verifyAgentCreated, 30*time.Second).Should(Succeed())
+
+			By("verifying the Agent DaemonSet was created")
+			verifyDaemonSetCreated := func(g Gomega) {
+				cmd := exec.Command("kubectl", "get", "daemonset", "iprule-agent",
+					"-n", namespace, "-o", "jsonpath={.metadata.name}")
+				output, err := utils.Run(cmd)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(output).To(Equal("iprule-agent"))
+			}
+			Eventually(verifyDaemonSetCreated, 30*time.Second).Should(Succeed())
+
+			By("verifying the Agent status is updated")
+			verifyAgentStatus := func(g Gomega) {
+				cmd := exec.Command("kubectl", "get", "agent", "test-agent",
+					"-n", namespace,
+					"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}")
+				output, err := utils.Run(cmd)
+				g.Expect(err).NotTo(HaveOccurred())
+				// Status should be set (either True or False)
+				g.Expect(output).NotTo(BeEmpty())
+			}
+			Eventually(verifyAgentStatus, 2*time.Minute).Should(Succeed())
+
+			By("cleaning up the Agent")
+			cmd = exec.Command("kubectl", "delete", "agent", "test-agent", "-n", namespace)
+			_, _ = utils.Run(cmd)
+		})
 
 		// TODO: Customize the e2e test suite with scenarios specific to your project.
 		// Consider applying sample/CR(s) and check their status and/or verifying
