@@ -11,6 +11,7 @@ rules:
 - apiGroups:
     - api.operator.brtrm.dev
   resources:
+    - agents
     - ipruleconfigs
     - iprules
   verbs:

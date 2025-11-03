@@ -11,4 +11,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: iprule-agent
-    namespace: ip-rule-operator
+    namespace: ip-rule

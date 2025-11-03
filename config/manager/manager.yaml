@@ -5,7 +5,7 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: ip-rule-operator
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: ip-rule
 ---
 apiVersion: apps/v1
 kind: Deployment

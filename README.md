@@ -29,48 +29,48 @@ The operator consists of two main components:
 1. **Controller (Manager)**: 
    - Monitors Kubernetes LoadBalancer Services
    - Matches LoadBalancer IPs against defined IPRule policies (CIDR-based)
-   - Generiert automatisch IPRuleConfig-Ressourcen für jeden Service
-   - Verwaltet den Agent-DaemonSet
+   - Automatically generates IPRuleConfig resources for each Service
+   - Manages the Agent DaemonSet
 
 2. **Agent (DaemonSet)**:
-   - Läuft auf jedem Node mit hostNetwork-Zugriff
-   - Wendet IP-Routing-Regeln auf dem Node an/entfernt sie
-   - Nutzt Linux netlink für direkte Kernel-Interaktion
-   - Reconciled kontinuierlich den gewünschten Zustand
+   - Runs on each node with hostNetwork access
+   - Applies/removes IP routing rules on the node
+   - Uses Linux netlink for direct kernel interaction
+   - Continuously reconciles the desired state
 
-### Was ist Policy-Based Routing?
+### What is Policy-Based Routing?
 
-**Policy-Based Routing (PBR)** ermöglicht es, Routing-Entscheidungen nicht nur basierend auf der Ziel-IP-Adresse zu treffen (wie beim klassischen Routing), sondern auch basierend auf anderen Kriterien wie der **Quell-IP-Adresse**.
+**Policy-Based Routing (PBR)** allows routing decisions to be made not only based on the destination IP address (as in classic routing), but also based on other criteria such as the **source IP address**.
 
-#### Anwendungsfall im Kubernetes-Kontext:
+#### Use Case in Kubernetes Context:
 
-In einem Kubernetes-Cluster mit mehreren Netzwerk-Interfaces oder Load-Balancern möchten Sie möglicherweise:
+In a Kubernetes cluster with multiple network interfaces or load balancers, you may want to:
 
-- **Multi-Homing**: Traffic von bestimmten Services über ein spezifisches Netzwerk-Interface leiten
-- **Provider-basiertes Routing**: Services verschiedener Mandanten über unterschiedliche ISP-Uplinks routen
-- **Traffic-Segregation**: Produktions- und Test-Traffic physisch trennen
-- **Geo-Routing**: Traffic basierend auf LoadBalancer-IP-Bereichen regional verteilen
+- **Multi-Homing**: Route traffic from specific services through a specific network interface
+- **Provider-based Routing**: Route services from different tenants through different ISP uplinks
+- **Traffic Segregation**: Physically separate production and test traffic
+- **Geo-Routing**: Regionally distribute traffic based on LoadBalancer IP ranges
 
-#### Wie funktioniert es?
+#### How does it work?
 
-Der Operator nutzt Linux **IP Rules** (siehe `ip rule`), um Traffic basierend auf der Quell-IP (Service ClusterIP) über alternative Routing-Tabellen zu leiten:
+The operator uses Linux **IP Rules** (see `ip rule`) to route traffic based on the source IP (Service ClusterIP) through alternative routing tables:
 
 ```bash
-# Beispiel: Traffic von Service 10.96.1.50 nutzt Routing-Tabelle 100
+# Example: Traffic from Service 10.96.1.50 uses routing table 100
 ip rule add from 10.96.1.50 lookup 100 priority 1000
 ```
 
-Die Routing-Tabelle 100 kann dann eigene Routes enthalten, z.B.:
+Routing table 100 can then contain its own routes, e.g.:
 ```bash
-# Tabelle 100: Traffic über spezielles Gateway
+# Table 100: Traffic via special gateway
 ip route add default via 192.168.1.1 dev eth1 table 100
 ```
 
-**Resultat**: Alle Pakete, die von der Service-IP `10.96.1.50` stammen, werden über das Gateway `192.168.1.1` geroutet, während andere Services die Standard-Route nutzen.
+**Result**: All packets originating from the Service IP `10.96.1.50` are routed through the gateway `192.168.1.1`, while other services use the default route.
 
-## 🏗️ Architektur
+## 🏗️ Architecture
 
-### Komponenten-Diagramm
+### Component Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -136,11 +136,11 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Ressourcen-Interaktion
+### Resource Interaction
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    Workflow & Interaktionen                      │
+│                    Workflow & Interactions                       │
 └──────────────────────────────────────────────────────────────────┘
 
   User/Admin                     Kubernetes API
@@ -234,16 +234,16 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 
 ## 🚀 Installation
 
-### Voraussetzungen
+### Prerequisites
 
-- Kubernetes v1.11.3+ oder OpenShift 4.x+
-- kubectl oder oc CLI konfiguriert
-- Cluster-Admin-Rechte für Installation
-- Linux-Nodes (Agent benötigt Linux-Kernel mit netlink-Support)
+- Kubernetes v1.11.3+ or OpenShift 4.x+
+- kubectl or oc CLI configured
+- Cluster admin privileges for installation
+- Linux nodes (Agent requires Linux kernel with netlink support)
 
-### Methode 1: Installation via YAML (Kubernetes)
+### Method 1: Installation via YAML (Kubernetes)
 
-#### Schritt 1: CRDs installieren
+#### Step 1: Install CRDs
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/api.operator.brtrm.dev_iprules.yaml
@@ -251,31 +251,31 @@ kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operato
 kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/config/crd/bases/api.operator.brtrm.dev_agents.yaml
 ```
 
-Oder mit Makefile (aus Repository):
+Or with Makefile (from repository):
 ```bash
 make install
 ```
 
-#### Schritt 2: Operator deployen
+#### Step 2: Deploy Operator
 
-Mit vorgebauten Images:
+With pre-built images:
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/mariusbertram/ip-rule-operator/main/dist/install.yaml
 ```
 
-Oder selbst bauen und deployen:
+Or build and deploy yourself:
 ```bash
 export IMG=ghcr.io/mariusbertram/iprule-controller:v0.0.1
 export AGENT_IMG=ghcr.io/mariusbertram/iprule-agent:v0.0.1
 
-# Images bauen und pushen
+# Build and push images
 make docker-build-all docker-push-all
 
-# Operator deployen
+# Deploy operator
 make deploy IMG=${IMG}
 ```
 
-#### Schritt 3: Agent-DaemonSet erstellen
+#### Step 3: Create Agent DaemonSet
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -285,14 +285,14 @@ metadata:
   name: iprule-agent
   namespace: ip-rule-operator-system
 spec:
-  # Optional: Spezifisches Image
+  # Optional: Specific image
   # image: ghcr.io/mariusbertram/iprule-agent:v0.0.1
   
-  # Optional: Node-Selektor
+  # Optional: Node selector
   nodeSelector:
     kubernetes.io/os: linux
   
-  # Optional: Tolerations für Control-Plane-Nodes
+  # Optional: Tolerations for control plane nodes
   tolerations:
   - key: node-role.kubernetes.io/control-plane
     operator: Exists
@@ -300,40 +300,40 @@ spec:
 EOF
 ```
 
-#### Schritt 4: Verifizierung
+#### Step 4: Verification
 
 ```bash
-# Prüfe Operator-Pod
+# Check operator pod
 kubectl get pods -n ip-rule-operator-system
 
-# Prüfe Agent-DaemonSet
+# Check agent DaemonSet
 kubectl get daemonset -n ip-rule-operator-system iprule-agent
 
-# Prüfe CRDs
+# Check CRDs
 kubectl get crds | grep api.operator.brtrm.dev
 ```
 
-### Methode 2: Installation via OLM (OpenShift)
+### Method 2: Installation via OLM (OpenShift)
 
-Der Operator kann über den Operator Lifecycle Manager (OLM) in OpenShift installiert werden.
+The operator can be installed via the Operator Lifecycle Manager (OLM) in OpenShift.
 
-#### Option A: Über OpenShift Web Console
+#### Option A: Via OpenShift Web Console
 
-1. **Öffne die OpenShift Web Console**
-2. Navigiere zu **Operators** → **OperatorHub**
-3. Suche nach **"IP Rule Operator"**
-4. Klicke auf **Install**
-5. Wähle:
+1. **Open the OpenShift Web Console**
+2. Navigate to **Operators** → **OperatorHub**
+3. Search for **"IP Rule Operator"**
+4. Click on **Install**
+5. Select:
    - **Update Channel**: stable
    - **Installation Mode**: All namespaces on the cluster
    - **Installed Namespace**: openshift-operators
-   - **Update Approval**: Automatic (empfohlen)
-6. Klicke auf **Install**
-7. Warte, bis der Status **Succeeded** anzeigt
+   - **Update Approval**: Automatic (recommended)
+6. Click on **Install**
+7. Wait until the status shows **Succeeded**
 
 #### Option B: Via CLI (oc)
 
-##### Schritt 1: CatalogSource erstellen
+##### Step 1: Create CatalogSource
 
 ```bash
 cat <<EOF | oc apply -f -
@@ -353,7 +353,7 @@ spec:
 EOF
 ```
 
-##### Schritt 2: OperatorGroup erstellen (falls nicht vorhanden)
+##### Step 2: Create OperatorGroup (if not exists)
 
 ```bash
 cat <<EOF | oc apply -f -
@@ -366,7 +366,7 @@ spec: {}
 EOF
 ```
 
-##### Schritt 3: Subscription erstellen
+##### Step 3: Create Subscription
 
 ```bash
 cat <<EOF | oc apply -f -
@@ -384,28 +384,28 @@ spec:
 EOF
 ```
 
-##### Schritt 4: Installation verifizieren
+##### Step 4: Verify Installation
 
 ```bash
-# Prüfe Subscription-Status
+# Check subscription status
 oc get subscription ip-rule-operator -n openshift-operators
 
-# Prüfe InstallPlan
+# Check InstallPlan
 oc get installplan -n openshift-operators
 
-# Prüfe ClusterServiceVersion (CSV)
+# Check ClusterServiceVersion (CSV)
 oc get csv -n openshift-operators | grep ip-rule
 
-# Prüfe Operator-Pod
+# Check operator pod
 oc get pods -n openshift-operators | grep ip-rule
 
-# Prüfe CRDs
+# Check CRDs
 oc get crds | grep api.operator.brtrm.dev
 ```
 
-##### Schritt 5: Agent-Instanz erstellen
+##### Step 5: Create Agent Instance
 
-Nach erfolgreicher Installation des Operators:
+After successful operator installation:
 
 ```bash
 cat <<EOF | oc apply -f -
@@ -427,36 +427,36 @@ spec:
 EOF
 ```
 
-#### OLM Bundle lokal bauen und pushen
+#### Building and Pushing OLM Bundle Locally
 
-Für Entwickler/Maintainer:
+For developers/maintainers:
 
 ```bash
-# Bundle generieren
+# Generate bundle
 make bundle VERSION=0.0.1
 
-# Bundle-Image bauen
+# Build bundle image
 make bundle-build BUNDLE_IMG=ghcr.io/mariusbertram/ip-rule-operator-bundle:v0.0.1
 
-# Bundle-Image pushen
+# Push bundle image
 make bundle-push BUNDLE_IMG=ghcr.io/mariusbertram/ip-rule-operator-bundle:v0.0.1
 
-# Catalog-Image bauen (File-Based Catalog)
+# Build catalog image (File-Based Catalog)
 make catalog-fbc-build CATALOG_IMG=ghcr.io/mariusbertram/ip-rule-operator-catalog:v0.0.1
 
-# Catalog-Image pushen
+# Push catalog image
 make catalog-push CATALOG_IMG=ghcr.io/mariusbertram/ip-rule-operator-catalog:v0.0.1
 ```
 
-### Deinstallation
+### Uninstallation
 
 #### Kubernetes (YAML):
 
 ```bash
-# Operator entfernen
+# Remove operator
 make undeploy
 
-# CRDs entfernen
+# Remove CRDs
 make uninstall
 ```
 
@@ -468,15 +468,15 @@ oc delete subscription ip-rule-operator -n openshift-operators
 oc delete csv -n openshift-operators $(oc get csv -n openshift-operators | grep ip-rule | awk '{print $1}')
 oc delete catalogsource ip-rule-operator-catalog -n openshift-marketplace
 
-# Oder via Web Console:
+# Or via Web Console:
 # Operators → Installed Operators → IP Rule Operator → Uninstall
 ```
 
-## 📖 Verwendung
+## 📖 Usage
 
-### Beispiel 1: Einfache IP-Regel
+### Example 1: Simple IP Rule
 
-Erstelle eine IPRule für LoadBalancer-IPs im Bereich `192.168.1.0/24`:
+Create an IPRule for LoadBalancer IPs in the range `192.168.1.0/24`:
 
 ```yaml
 apiVersion: api.operator.brtrm.dev/v1alpha1
@@ -493,9 +493,9 @@ spec:
 kubectl apply -f iprule-example.yaml
 ```
 
-**Effekt**: Alle Services mit LoadBalancer-IPs in diesem Bereich werden automatisch mit IP-Regeln konfiguriert, die Routing-Tabelle 100 verwenden.
+**Effect**: All services with LoadBalancer IPs in this range will automatically be configured with IP rules using routing table 100.
 
-### Beispiel 2: Multi-Datacenter-Setup
+### Example 2: Multi-Datacenter Setup
 
 ```yaml
 ---
@@ -527,135 +527,135 @@ spec:
   priority: 2000
 ```
 
-**Anwendungsfall**: Services mit LB-IPs aus unterschiedlichen Datacenter-Bereichen nutzen verschiedene Routing-Tabellen (z.B. für verschiedene ISP-Uplinks).
+**Use Case**: Services with LB IPs from different datacenter ranges use different routing tables (e.g., for different ISP uplinks).
 
-### Beispiel 3: Routing-Tabellen konfigurieren
+### Example 3: Configure Routing Tables
 
-Die IP-Regeln verweisen auf Routing-Tabellen. Diese müssen auf den Nodes konfiguriert werden:
+The IP rules reference routing tables. These must be configured on the nodes:
 
 ```bash
-# Auf jedem Node:
-# /etc/iproute2/rt_tables erweitern
+# On each node:
+# Extend /etc/iproute2/rt_tables
 echo "100 datacenter_a" >> /etc/iproute2/rt_tables
 echo "200 datacenter_b" >> /etc/iproute2/rt_tables
 
-# Routes in Tabelle 100 konfigurieren
+# Configure routes in table 100
 ip route add default via 192.168.1.1 dev eth1 table 100
 
-# Routes in Tabelle 200 konfigurieren
+# Configure routes in table 200
 ip route add default via 192.168.2.1 dev eth2 table 200
 
-# Persistenz mit NetworkManager oder systemd-networkd sicherstellen
+# Ensure persistence with NetworkManager or systemd-networkd
 ```
 
-### Status prüfen
+### Check Status
 
 ```bash
-# IPRules anzeigen
+# Display IPRules
 kubectl get iprules
 
-# IPRuleConfigs anzeigen (automatisch generiert)
+# Display IPRuleConfigs (automatically generated)
 kubectl get ipruleconfigs
 
-# Agent-Status prüfen
+# Check Agent status
 kubectl get agent -n ip-rule-operator-system
 
-# Agent-Logs anzeigen
+# Display Agent logs
 kubectl logs -n ip-rule-operator-system -l app=iprule-agent --tail=100
 
-# Controller-Logs
+# Controller logs
 kubectl logs -n ip-rule-operator-system deployment/ip-rule-operator-controller-manager --tail=100
 
-# IP-Regeln auf einem Node prüfen
+# Check IP rules on a node
 kubectl debug node/<node-name> -it --image=nicolaka/netshoot
 ip rule show
 ```
 
-## 🔧 Entwicklung
+## 🔧 Development
 
-### Lokale Entwicklung
+### Local Development
 
-#### Voraussetzungen
+#### Prerequisites
 - Go 1.24+
-- Docker oder Podman
+- Docker or Podman
 - kubectl
 - operator-sdk v1.41.1+
-- Access zu einem Kubernetes-Cluster (z.B. Kind, Minikube)
+- Access to a Kubernetes cluster (e.g., Kind, Minikube)
 
 #### Setup
 
 ```bash
-# Repository klonen
+# Clone repository
 git clone https://github.com/mariusbertram/ip-rule-operator.git
 cd ip-rule-operator
 
-# Dependencies installieren
+# Install dependencies
 go mod download
 
-# Code generieren
+# Generate code
 make generate manifests
 
-# Tests ausführen
+# Run tests
 make test
 
-# Lokaler Build
+# Local build
 make build build-agent
 ```
 
-#### Lokales Deployment
+#### Local Deployment
 
 ```bash
-# Kind-Cluster erstellen
+# Create Kind cluster
 kind create cluster --name ip-rule-operator-dev
 
-# CRDs installieren
+# Install CRDs
 make install
 
-# Controller lokal ausführen (außerhalb des Clusters)
+# Run controller locally (outside the cluster)
 make run
 
-# In einem anderen Terminal: Agent lokal ausführen (nur Linux)
-# ACHTUNG: Benötigt NET_ADMIN Capability
+# In another terminal: Run agent locally (Linux only)
+# WARNING: Requires NET_ADMIN capability
 sudo make run-agent
 ```
 
-#### Images bauen und pushen
+#### Build and Push Images
 
 ```bash
-# Setze Registry
+# Set registry
 export REGISTRY=ghcr.io/yourusername/
 
-# Beide Images bauen
+# Build both images
 make docker-build-all VERSION=0.0.2
 
-# Beide Images pushen
+# Push both images
 make docker-push-all VERSION=0.0.2
 
-# In Cluster deployen
+# Deploy to cluster
 make deploy IMG=ghcr.io/yourusername/iprule-controller:v0.0.2
 ```
 
-### E2E-Tests
+### E2E Tests
 
 ```bash
-# E2E-Tests mit Kind
+# E2E tests with Kind
 make test-e2e
 
-# Manuelles Setup für E2E
+# Manual E2E setup
 make setup-test-e2e
-# Tests ausführen
+# Run tests
 go test ./test/e2e/ -v -ginkgo.v
 # Cleanup
 make cleanup-test-e2e
 ```
 
-### Code-Qualität
+### Code Quality
 
 ```bash
 # Linting
 make lint
 
-# Linting mit Auto-Fix
+# Linting with auto-fix
 make lint-fix
 
 # Formatting
@@ -667,22 +667,22 @@ make vet
 
 ## 🤝 Contributing
 
-Beiträge sind willkommen! Bitte beachte:
+Contributions are welcome! Please note:
 
-1. **Fork** das Repository
-2. Erstelle einen **Feature-Branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit** deine Änderungen (`git commit -m 'Add amazing feature'`)
-4. **Push** zum Branch (`git push origin feature/amazing-feature`)
-5. Öffne einen **Pull Request**
+1. **Fork** the repository
+2. Create a **feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. Open a **Pull Request**
 
-### Code-Richtlinien
+### Coding Guidelines
 
-- Folge den Go-Coding-Standards
-- Füge Tests für neue Features hinzu
-- Aktualisiere die Dokumentation
-- Führe `make lint` und `make test` vor dem Commit aus
+- Follow Go coding standards
+- Add tests for new features
+- Update documentation
+- Run `make lint` and `make test` before committing
 
-## 📝 Lizenz
+## 📝 License
 
 Copyright 2025 Marius Bertram.
 
@@ -707,11 +707,11 @@ limitations under the License.
 
 ## 📞 Support
 
-Bei Fragen oder Problemen:
-- Öffne ein [Issue](https://github.com/mariusbertram/ip-rule-operator/issues)
-- Kontaktiere: Marius Bertram
+For questions or issues:
+- Open an [Issue](https://github.com/mariusbertram/ip-rule-operator/issues)
+- Contact: Marius Bertram
 
 ---
 
-**⭐ Wenn dir dieses Projekt gefällt, gib ihm einen Stern auf GitHub!**
+**⭐ If you like this project, give it a star on GitHub!**
 

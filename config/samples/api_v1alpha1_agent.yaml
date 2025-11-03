@@ -6,5 +6,5 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: agent-sample
 spec:
-  nodeselector:
+  nodeSelector:
     kubernetes.io/os: linux

@@ -48,6 +48,9 @@ func main() {
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		log.Fatalf("add scheme: %v", err)
 	}
+	if err := corev1.AddToScheme(scheme); err != nil {
+		log.Fatalf("add corev1 scheme: %v", err)
+	}
 	c, err := client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
 		log.Fatalf("failed to init k8s client: %v", err)
@@ -291,6 +294,67 @@ func deleteIPRuleConfigWithRetry(ctx context.Context, c client.Client, cfg *apiv
 	})
 }
 
+// getTargetNodes gibt die Nodes zurück, auf denen der Agent läuft (basierend auf Agent NodeSelector).
+// Falls kein Agent CR existiert oder kein NodeSelector gesetzt ist, werden alle Nodes zurückgegeben.
+func getTargetNodes(ctx context.Context, c client.Client) ([]corev1.Node, error) {
+	// List all Agent CRs
+	agentList := &apiv1alpha1.AgentList{}
+	if err := c.List(ctx, agentList); err != nil {
+		return nil, fmt.Errorf("list agents: %w", err)
+	}
+
+	// If no Agent CR exists, return all nodes (fallback to old behavior)
+	if len(agentList.Items) == 0 {
+		return getAllNodes(ctx, c)
+	}
+
+	// Use the first Agent CR's nodeSelector
+	agent := &agentList.Items[0]
+	nodeSelector := agent.Spec.NodeSelector
+
+	// If no nodeSelector is set, return all nodes
+	if len(nodeSelector) == 0 {
+		return getAllNodes(ctx, c)
+	}
+
+	// List nodes matching the nodeSelector
+	nodeList := &corev1.NodeList{}
+	if err := c.List(ctx, nodeList); err != nil {
+		return nil, fmt.Errorf("list nodes: %w", err)
+	}
+
+	// Filter nodes by nodeSelector
+	var targetNodes []corev1.Node
+	for i := range nodeList.Items {
+		node := &nodeList.Items[i]
+		if matchesNodeSelector(node, nodeSelector) {
+			targetNodes = append(targetNodes, *node)
+		}
+	}
+
+	return targetNodes, nil
+}
+
+// getAllNodes gibt alle Nodes im Cluster zurück
+func getAllNodes(ctx context.Context, c client.Client) ([]corev1.Node, error) {
+	nodeList := &corev1.NodeList{}
+	if err := c.List(ctx, nodeList); err != nil {
+		return nil, fmt.Errorf("list all nodes: %w", err)
+	}
+	return nodeList.Items, nil
+}
+
+// matchesNodeSelector prüft, ob ein Node alle Labels des NodeSelectors hat
+func matchesNodeSelector(node *corev1.Node, selector map[string]string) bool {
+	for key, value := range selector {
+		nodeValue, exists := node.Labels[key]
+		if !exists || nodeValue != value {
+			return false
+		}
+	}
+	return true
+}
+
 // handleAbsentConfig löscht lokale Rule, setzt Ack-Annotation und löscht CR erst wenn alle Nodes bestätigt haben.
 func handleAbsentConfig(
 	ctx context.Context,
@@ -355,13 +419,16 @@ func handleAbsentConfig(
 	if fresh.Spec.State != apiv1alpha1.StateAbsent { // resurrected
 		return nil
 	}
-	nodes := &corev1.NodeList{}
-	if err := c.List(ctx, nodes); err != nil {
-		return fmt.Errorf("list nodes: %w", err)
+
+	// Get target nodes based on Agent nodeSelector
+	targetNodes, err := getTargetNodes(ctx, c)
+	if err != nil {
+		return fmt.Errorf("get target nodes: %w", err)
 	}
+
 	allAck := true
-	for i := range nodes.Items {
-		k := annotationCleanupPrefix + nodes.Items[i].Name
+	for _, node := range targetNodes {
+		k := annotationCleanupPrefix + node.Name
 		if fresh.Annotations == nil || fresh.Annotations[k] != ackValueDone {
 			allAck = false
 			break

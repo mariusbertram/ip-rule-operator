@@ -15,7 +15,7 @@ metadata:
             "name": "agent-sample"
           },
           "spec": {
-            "nodeselector": {
+            "nodeSelector": {
               "kubernetes.io/os": "linux"
             }
           }
@@ -37,7 +37,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-11-03T08:00:53Z"
+    createdAt: "2025-11-03T11:27:44Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1
@@ -175,6 +175,7 @@ spec:
             - apiGroups:
                 - api.operator.brtrm.dev
               resources:
+                - agents
                 - ipruleconfigs
                 - iprules
               verbs:
@@ -224,7 +225,7 @@ spec:
                       - /manager
                     env:
                       - name: RELATED_IMAGE_AGENT_IMAGE
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:7bc127c53a97dc92f81b37b4607787f9dec439301597e7be296e3a8b0c84b453
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:cc23751f2ed2bb31f52431f09f967c0325e555a6b837874dc097bdb3e39d7838
                     image: ghcr.io/mariusbertram/iprule-controller@sha256:a57b18a021ee63c9cfa49d8c1b1511ff764f80063c6fa54f2a38c9dbb55b7530
                     livenessProbe:
                       httpGet:
@@ -314,10 +315,10 @@ spec:
     name: Marius Bertram
     url: github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:7bc127c53a97dc92f81b37b4607787f9dec439301597e7be296e3a8b0c84b453
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:cc23751f2ed2bb31f52431f09f967c0325e555a6b837874dc097bdb3e39d7838
       name: agent-image
     - image: ghcr.io/mariusbertram/iprule-controller@sha256:a57b18a021ee63c9cfa49d8c1b1511ff764f80063c6fa54f2a38c9dbb55b7530
       name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:7bc127c53a97dc92f81b37b4607787f9dec439301597e7be296e3a8b0c84b453
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:cc23751f2ed2bb31f52431f09f967c0325e555a6b837874dc097bdb3e39d7838
       name: agent_image
   version: 0.0.1

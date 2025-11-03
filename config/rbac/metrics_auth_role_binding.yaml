@@ -9,4 +9,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ip-rule-controller-manager
-  namespace: system
+  namespace: ip-rule
