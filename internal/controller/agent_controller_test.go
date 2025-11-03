@@ -33,7 +33,7 @@ import (
 
 var _ = Describe("Agent Controller", func() {
 	Context("When reconciling a resource", func() {
-		const resourceName = "test-agent"
+		const resourceName = "agent"
 
 		ctx := context.Background()
 
@@ -134,117 +134,27 @@ var _ = Describe("Agent Controller", func() {
 		})
 	})
 
-	Context("When multiple Agent resources exist", func() {
-		const (
-			agent1Name = "test-agent-1"
-			agent2Name = "test-agent-2"
-		)
+	Context("When Agent has invalid name", func() {
+		const invalidName = "invalid-agent-name"
 
 		ctx := context.Background()
 
-		BeforeEach(func() {
-			By("creating first Agent")
-			agent1 := &apiv1alpha1.Agent{
+		It("should reject Agent with invalid name via CRD validation", func() {
+			By("Attempting to create Agent with invalid name")
+			agent := &apiv1alpha1.Agent{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      agent1Name,
+					Name:      invalidName,
 					Namespace: "default",
 				},
 				Spec: apiv1alpha1.AgentSpec{
-					Image: "iprule-agent:test1",
+					Image: "iprule-agent:test",
 				},
 			}
-			err := k8sClient.Create(ctx, agent1)
-			if err != nil && !errors.IsAlreadyExists(err) {
-				Expect(err).NotTo(HaveOccurred())
-			}
+			err := k8sClient.Create(ctx, agent)
 
-			By("creating second Agent")
-			agent2 := &apiv1alpha1.Agent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      agent2Name,
-					Namespace: "default",
-				},
-				Spec: apiv1alpha1.AgentSpec{
-					Image: "iprule-agent:test2",
-				},
-			}
-			err = k8sClient.Create(ctx, agent2)
-			if err != nil && !errors.IsAlreadyExists(err) {
-				Expect(err).NotTo(HaveOccurred())
-			}
-		})
-
-		AfterEach(func() {
-			By("Cleanup Agent resources")
-			for _, name := range []string{agent1Name, agent2Name} {
-				agent := &apiv1alpha1.Agent{}
-				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, agent)
-				if err == nil {
-					_ = k8sClient.Delete(ctx, agent)
-				}
-			}
-
-			By("Cleanup DaemonSet if exists")
-			ds := &appsv1.DaemonSet{}
-			err := k8sClient.Get(ctx, types.NamespacedName{Name: "iprule-agent", Namespace: "default"}, ds)
-			if err == nil {
-				_ = k8sClient.Delete(ctx, ds)
-			}
-		})
-
-		It("should handle multiple Agents correctly", func() {
-			By("Reconciling both Agents")
-			controllerReconciler := &AgentReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
-
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{Name: agent1Name, Namespace: "default"},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: types.NamespacedName{Name: agent2Name, Namespace: "default"},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Verifying both Agents have conditions set")
-			Eventually(func() bool {
-				agent1 := &apiv1alpha1.Agent{}
-				agent2 := &apiv1alpha1.Agent{}
-
-				if err := k8sClient.Get(ctx, types.NamespacedName{Name: agent1Name, Namespace: "default"}, agent1); err != nil {
-					return false
-				}
-				if err := k8sClient.Get(ctx, types.NamespacedName{Name: agent2Name, Namespace: "default"}, agent2); err != nil {
-					return false
-				}
-
-				// Both should have status conditions
-				return len(agent1.Status.Conditions) > 0 && len(agent2.Status.Conditions) > 0
-			}, "10s", "500ms").Should(BeTrue())
-
-			By("Verifying alphabetically first Agent is active")
-			agent1 := &apiv1alpha1.Agent{}
-			agent2 := &apiv1alpha1.Agent{}
-
-			err = k8sClient.Get(ctx, types.NamespacedName{Name: agent1Name, Namespace: "default"}, agent1)
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, types.NamespacedName{Name: agent2Name, Namespace: "default"}, agent2)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Since agent1Name < agent2Name alphabetically, agent1 should be active
-			cond1 := findCondition(agent1.Status.Conditions, string(apiv1alpha1.AgentConditionReady))
-			cond2 := findCondition(agent2.Status.Conditions, string(apiv1alpha1.AgentConditionReady))
-
-			Expect(cond1).NotTo(BeNil())
-			Expect(cond2).NotTo(BeNil())
-
-			// Agent1 should NOT have InactiveInstance reason (it's the active one)
-			// Agent2 should have InactiveInstance reason
-			Expect(cond1.Reason).NotTo(Equal("InactiveInstance"))
-			Expect(cond2.Reason).To(Equal("InactiveInstance"))
+			By("Verifying creation is rejected")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Agent resource name must be 'agent'"))
 		})
 	})
 })
