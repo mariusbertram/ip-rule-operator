@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,27 +71,35 @@ type ipRuleEntry struct {
 
 func (r *IPRuleReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) { // lint: reduce complexity by delegating
 	log := logf.FromContext(ctx)
+	timer := prometheus.NewTimer(metricReconcileDuration.WithLabelValues("iprule"))
+	defer timer.ObserveDuration()
+
+	metricReconcileTotal.WithLabelValues("iprule").Inc()
 
 	ipRules := &apiv1alpha1.IPRuleList{}
 	if err := r.List(ctx, ipRules); err != nil {
+		metricReconcileErrors.WithLabelValues("iprule").Inc()
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	svcIPSet, err := r.collectServiceVIPs(ctx)
 	if err != nil {
+		metricReconcileErrors.WithLabelValues("iprule").Inc()
 		return ctrl.Result{}, err
 	}
 
 	entryMap := r.buildDesiredEntryMap(ipRules, svcIPSet)
 	created, updated, unchanged, err := r.applyDesiredConfigs(ctx, entryMap)
 	if err != nil {
+		metricReconcileErrors.WithLabelValues("iprule").Inc()
 		return ctrl.Result{}, err
 	}
 
 	absentTotal, newlyAbsent := r.markAbsent(ctx, entryMap)
-	// Metriken entfernt
-	// metricDesiredGauge.Set(float64(len(entryMap)))
-	// metricAbsentGauge.Set(float64(absentTotal))
+
+	// Update metrics
+	metricDesiredGauge.Set(float64(len(entryMap)))
+	metricAbsentGauge.Set(float64(absentTotal))
 
 	log.Info("finished reconciling ip rule configs",
 		"desired", len(entryMap),
@@ -206,10 +215,10 @@ func (r *IPRuleReconciler) applyDesiredConfigs(ctx context.Context, entryMap map
 		switch result {
 		case controllerutil.OperationResultCreated:
 			created++
-			// metricConfigCreate.Inc()
+			metricConfigCreate.Inc()
 		case controllerutil.OperationResultUpdated:
 			updated++
-			// metricConfigUpdate.Inc()
+			metricConfigUpdate.Inc()
 		}
 	}
 	return created, updated, unchanged, nil
@@ -243,7 +252,7 @@ func (r *IPRuleReconciler) markAbsent(ctx context.Context, entryMap map[string]i
 					logf.FromContext(ctx).Error(err, "failed to mark IPRuleConfig absent", "name", cfg.Name)
 				} else {
 					newlyAbsent++
-					// metricConfigMarkedAbsent.Inc()
+					metricConfigMarkedAbsent.Inc()
 				}
 			}
 		}

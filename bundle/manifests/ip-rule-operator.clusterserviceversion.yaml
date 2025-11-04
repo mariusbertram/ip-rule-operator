@@ -37,7 +37,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-11-03T21:36:26Z"
+    createdAt: "2025-11-03T21:57:19Z"
     operators.operatorframework.io/builder: operator-sdk-v1.41.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: ip-rule-operator.v0.0.1
@@ -225,8 +225,8 @@ spec:
                       - /manager
                     env:
                       - name: RELATED_IMAGE_AGENT_IMAGE
-                        value: ghcr.io/mariusbertram/iprule-agent@sha256:cc23751f2ed2bb31f52431f09f967c0325e555a6b837874dc097bdb3e39d7838
-                    image: ghcr.io/mariusbertram/iprule-controller@sha256:a57b18a021ee63c9cfa49d8c1b1511ff764f80063c6fa54f2a38c9dbb55b7530
+                        value: ghcr.io/mariusbertram/iprule-agent@sha256:cfd0093d768d041a7d88792ff5edc45112fea8896a3481fb06e18937e6874945
+                    image: ghcr.io/mariusbertram/iprule-controller@sha256:20110a8b45e4472ba73da5b3e6f881203a16f3ee161ae832da7b463d9c133fbe
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -315,10 +315,10 @@ spec:
     name: Marius Bertram
     url: github.com/mariusbertram/ip-rule-operator
   relatedImages:
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:cc23751f2ed2bb31f52431f09f967c0325e555a6b837874dc097bdb3e39d7838
-      name: agent-image
-    - image: ghcr.io/mariusbertram/iprule-controller@sha256:a57b18a021ee63c9cfa49d8c1b1511ff764f80063c6fa54f2a38c9dbb55b7530
-      name: manager
-    - image: ghcr.io/mariusbertram/iprule-agent@sha256:cc23751f2ed2bb31f52431f09f967c0325e555a6b837874dc097bdb3e39d7838
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:cfd0093d768d041a7d88792ff5edc45112fea8896a3481fb06e18937e6874945
       name: agent_image
+    - image: ghcr.io/mariusbertram/iprule-agent@sha256:cfd0093d768d041a7d88792ff5edc45112fea8896a3481fb06e18937e6874945
+      name: agent-image
+    - image: ghcr.io/mariusbertram/iprule-controller@sha256:20110a8b45e4472ba73da5b3e6f881203a16f3ee161ae832da7b463d9c133fbe
+      name: manager
   version: 0.0.1

@@ -24,6 +24,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/prometheus/client_golang/prometheus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -58,6 +59,10 @@ type AgentReconciler struct {
 
 func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+	timer := prometheus.NewTimer(metricReconcileDuration.WithLabelValues("agent"))
+	defer timer.ObserveDuration()
+
+	metricReconcileTotal.WithLabelValues("agent").Inc()
 
 	agent := &apiv1alpha1.Agent{}
 	if err := r.Get(ctx, req.NamespacedName, agent); err != nil {
@@ -67,6 +72,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Verify that the Agent resource is named "agent"
 	if agent.Name != "agent" {
 		logger.Error(fmt.Errorf("invalid agent name"), "Agent resource must be named 'agent'", "name", agent.Name)
+		metricReconcileErrors.WithLabelValues("agent").Inc()
 		cond := metav1.Condition{
 			Type:               string(apiv1alpha1.AgentConditionReady),
 			Status:             metav1.ConditionFalse,
@@ -148,7 +154,18 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	})
 	if err != nil {
 		logger.Error(err, "reconcile daemonset failed", "name", key)
+		metricReconcileErrors.WithLabelValues("agent").Inc()
 		return ctrl.Result{}, err
+	}
+
+	// Track DaemonSet operations
+	switch result {
+	case controllerutil.OperationResultCreated:
+		metricAgentDaemonSetOperations.WithLabelValues("created").Inc()
+	case controllerutil.OperationResultUpdated:
+		metricAgentDaemonSetOperations.WithLabelValues("updated").Inc()
+	case controllerutil.OperationResultNone:
+		metricAgentDaemonSetOperations.WithLabelValues("unchanged").Inc()
 	}
 
 	// Update status based on DaemonSet status
@@ -158,6 +175,12 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		agent.Status.DesiredNumberScheduled = st.DesiredNumberScheduled
 		agent.Status.CurrentNumberScheduled = st.CurrentNumberScheduled
 		agent.Status.NumberReady = st.NumberReady
+
+		// Update metrics
+		metricAgentDaemonSetDesired.Set(float64(st.DesiredNumberScheduled))
+		metricAgentDaemonSetCurrent.Set(float64(st.CurrentNumberScheduled))
+		metricAgentDaemonSetReady.Set(float64(st.NumberReady))
+
 		readyCond := metav1.Condition{Type: string(apiv1alpha1.AgentConditionReady)}
 		if st.NumberReady > 0 && st.NumberReady == st.DesiredNumberScheduled {
 			readyCond.Status = metav1.ConditionTrue
@@ -174,6 +197,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 	if err := r.Status().Update(ctx, agent); err != nil {
 		logger.Error(err, "status update failed")
+		metricReconcileErrors.WithLabelValues("agent").Inc()
 		return ctrl.Result{}, err
 	}
 
