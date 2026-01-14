@@ -32,6 +32,8 @@ type AgentSpec struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// Tolerations applied to the agent pods.
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	// Resources applied to the agent pods.
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 type AgentConditionType string

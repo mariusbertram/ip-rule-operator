@@ -97,7 +97,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		image = "iprule-agent:latest"
 	}
 
-	// Hash over nodeSelector + tolerations + image
+	// Hash over nodeSelector + tolerations + image + resources
 	templateHash := computeTemplateHash(agent, image)
 
 	daemonSet := &appsv1.DaemonSet{}
@@ -127,6 +127,20 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if len(agent.Spec.Tolerations) > 0 {
 			tolerations = agent.Spec.Tolerations
 		}
+		resources := agent.Spec.Resources
+		if len(resources.Requests) == 0 && len(resources.Limits) == 0 {
+			resources = corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resourceMustParse("10m"),
+					corev1.ResourceMemory: resourceMustParse("16Mi"),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:    resourceMustParse("100m"),
+					corev1.ResourceMemory: resourceMustParse("256Mi"),
+				},
+			}
+		}
+
 		podSpec := corev1.PodSpec{
 			ServiceAccountName: "iprule-agent",
 			HostNetwork:        true,
@@ -142,7 +156,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 					{Name: "NODE_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
 					{Name: "RECONCILE_PERIOD", Value: "10s"},
 				},
-				Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resourceMustParse("10m"), corev1.ResourceMemory: resourceMustParse("16Mi")}, Limits: corev1.ResourceList{corev1.ResourceCPU: resourceMustParse("100m"), corev1.ResourceMemory: resourceMustParse("64Mi")}},
+				Resources: resources,
 			}},
 		}
 		daemonSet.Spec.Template = corev1.PodTemplateSpec{ObjectMeta: metav1.ObjectMeta{Labels: podLabels}, Spec: podSpec}
@@ -244,6 +258,9 @@ func computeTemplateHash(a *apiv1alpha1.Agent, image string) string {
 			data += fmt.Sprintf("tol:%s:%s:%s:%s;", t.Key, string(t.Operator), string(t.Effect), t.Value)
 		}
 	}
+	// Resources
+	data += fmt.Sprintf("res:%v:%v;", a.Spec.Resources.Requests, a.Spec.Resources.Limits)
+
 	sum := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(sum[:8])
 }
