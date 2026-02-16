@@ -30,7 +30,10 @@ type IPRuleSpec struct {
 	// Priority is the rule priority used. If 0, a default will be used by the agent
 	Priority int `json:"priority,omitempty"`
 	// SubnetTableMappings defines which routing table/priority to use for any LB IP within the given CIDR subnets
-	Cidr string `json:"cidr"`
+	// Deprecated: Use Cidrs instead
+	Cidr string `json:"cidr,omitempty"`
+	// Cidrs is a list of CIDR subnets (IPv4 and IPv6)
+	Cidrs []string `json:"cidrs,omitempty"`
 }
 
 // State constants for IPRuleConfig.Spec.State

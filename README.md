@@ -31,12 +31,14 @@ The operator consists of two main components:
    - Matches LoadBalancer IPs against defined IPRule policies (CIDR-based)
    - Automatically generates IPRuleConfig resources for each Service
    - Manages the Agent DaemonSet
+   - Supports IPv4 and IPv6 (Dual-Stack)
 
 2. **Agent (DaemonSet)**:
    - Runs on each node with hostNetwork access
    - Applies/removes IP routing rules on the node
    - Uses Linux netlink for direct kernel interaction
    - Continuously reconciles the desired state
+   - Supports IPv4 and IPv6 rules
 
 ### What is Policy-Based Routing?
 
@@ -50,6 +52,7 @@ In a Kubernetes cluster with multiple network interfaces or load balancers, you 
 - **Provider-based Routing**: Route services from different tenants through different ISP uplinks
 - **Traffic Segregation**: Physically separate production and test traffic
 - **Geo-Routing**: Regionally distribute traffic based on LoadBalancer IP ranges
+- **Dual-Stack Routing**: Handle IPv4 and IPv6 traffic with specific routing tables
 
 #### How does it work?
 
@@ -58,15 +61,19 @@ The operator uses Linux **IP Rules** (see `ip rule`) to route traffic based on t
 ```bash
 # Example: Traffic from Service 10.96.1.50 uses routing table 100
 ip rule add from 10.96.1.50 lookup 100 priority 1000
+
+# Example IPv6: Traffic from Service fd00::1 uses routing table 100
+ip -6 rule add from fd00::1 lookup 100 priority 1000
 ```
 
 Routing table 100 can then contain its own routes, e.g.:
 ```bash
 # Table 100: Traffic via special gateway
 ip route add default via 192.168.1.1 dev eth1 table 100
+ip -6 route add default via fd00::1 dev eth1 table 100
 ```
 
-**Result**: All packets originating from the Service IP `10.96.1.50` are routed through the gateway `192.168.1.1`, while other services use the default route.
+**Result**: All packets originating from the Service IP `10.96.1.50` (or `fd00::1`) are routed through the gateway `192.168.1.1` (or `fd00::1`), while other services use the default route.
 
 ## 🏗️ Architecture
 
@@ -97,7 +104,7 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 │  │  │  │   IPRule    │  │ IPRuleConfig │  │   Agent    │   │  │ │
 │  │  │  │ (User-def.) │  │ (Generated)  │  │ (Deploy)   │   │  │ │
 │  │  │  │             │  │              │  │            │   │  │ │
-│  │  │  │ cidr: ...   │  │ serviceIP    │  │ image: ... │   │  │ │
+│  │  │  │ cidrs: ...  │  │ serviceIP    │  │ image: ... │   │  │ │
 │  │  │  │ table: 100  │  │ table: 100   │  │ nodeSelect.│   │  │ │
 │  │  │  │ priority    │  │ state: ...   │  │            │   │  │ │
 │  │  │  └─────────────┘  └──────────────┘  └────────────┘   │  │ │
@@ -129,7 +136,7 @@ ip route add default via 192.168.1.1 dev eth1 table 100
 │  │  │                                                     │   │ │
 │  │  │  ip rule show:                                      │   │ │
 │  │  │    1000: from 10.96.1.50 lookup 100                 │   │ │
-│  │  │    1000: from 10.96.1.51 lookup 200                 │   │ │
+│  │  │    1000: from fd00::1 lookup 100                    │   │ │
 │  │  │    ...                                              │   │ │
 │  │  └─────────────────────────────────────────────────────┘   │ │
 │  └────────────────────────────────────────────────────────────┘ │
@@ -147,7 +154,7 @@ ip route add default via 192.168.1.1 dev eth1 table 100
       │                                │
       │ 1. Create IPRule               │
       ├───────────────────────────────>│
-      │    (cidr: 192.168.1.0/24)      │
+      │    (cidrs: [192.168.1.0/24])   │
       │    (table: 100, priority: 1000)│
       │                                │
       │ 2. Create Service (LB)         │
@@ -488,7 +495,8 @@ kind: IPRule
 metadata:
   name: datacenter-a-routing
 spec:
-  cidr: "192.168.1.0/24"
+  cidrs: 
+    - "192.168.1.0/24"
   table: 100
   priority: 1000
 ```
@@ -499,7 +507,7 @@ kubectl apply -f iprule-example.yaml
 
 **Effect**: All services with LoadBalancer IPs in this range will automatically be configured with IP rules using routing table 100.
 
-### Example 2: Multi-Datacenter Setup
+### Example 2: Multi-Datacenter Setup (Dual-Stack)
 
 ```yaml
 ---
@@ -508,7 +516,9 @@ kind: IPRule
 metadata:
   name: datacenter-a
 spec:
-  cidr: "10.0.0.0/16"
+  cidrs: 
+    - "10.0.0.0/16"
+    - "fd00:10::/64"
   table: 100
   priority: 1000
 ---
@@ -517,7 +527,9 @@ kind: IPRule
 metadata:
   name: datacenter-b
 spec:
-  cidr: "10.1.0.0/16"
+  cidrs: 
+    - "10.1.0.0/16"
+    - "fd00:20::/64"
   table: 200
   priority: 1000
 ---
@@ -526,7 +538,8 @@ kind: IPRule
 metadata:
   name: datacenter-c-priority
 spec:
-  cidr: "10.2.0.0/16"
+  cidrs: 
+    - "10.2.0.0/16"
   table: 300
   priority: 2000
 ```
@@ -545,9 +558,11 @@ echo "200 datacenter_b" >> /etc/iproute2/rt_tables
 
 # Configure routes in table 100
 ip route add default via 192.168.1.1 dev eth1 table 100
+ip -6 route add default via fd00::1 dev eth1 table 100
 
 # Configure routes in table 200
 ip route add default via 192.168.2.1 dev eth2 table 200
+ip -6 route add default via fd00::2 dev eth2 table 200
 
 # Ensure persistence with NetworkManager or systemd-networkd
 ```
@@ -573,6 +588,7 @@ kubectl logs -n ip-rule-operator-system deployment/ip-rule-operator-controller-m
 # Check IP rules on a node
 kubectl debug node/<node-name> -it --image=nicolaka/netshoot
 ip rule show
+ip -6 rule show
 ```
 
 ## 🔧 Development
@@ -718,4 +734,3 @@ For questions or issues:
 ---
 
 **⭐ If you like this project, give it a star on GitHub!**
-

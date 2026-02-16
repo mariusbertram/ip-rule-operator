@@ -40,9 +40,15 @@ spec:
             description: IpRuleSpec defines the desired state of IpRule.
             properties:
               cidr:
-                description: SubnetTableMappings defines which routing table/priority
-                  to use for any LB IP within the given CIDR subnets
+                description: |-
+                  SubnetTableMappings defines which routing table/priority to use for any LB IP within the given CIDR subnets
+                  Deprecated: Use Cidrs instead
                 type: string
+              cidrs:
+                description: Cidrs is a list of CIDR subnets (IPv4 and IPv6)
+                items:
+                  type: string
+                type: array
               priority:
                 description: Priority is the rule priority used. If 0, a default will
                   be used by the agent
@@ -52,7 +58,6 @@ spec:
                   rules. If 0, a default will be used by the agent
                 type: integer
             required:
-            - cidr
             - table
             type: object
           status:

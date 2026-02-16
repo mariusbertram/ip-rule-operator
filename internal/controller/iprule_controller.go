@@ -82,6 +82,22 @@ func (r *IPRuleReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Migrate old Cidr field to new Cidrs list
+	for i := range ipRules.Items {
+		rule := &ipRules.Items[i]
+		if rule.Spec.Cidr != "" && len(rule.Spec.Cidrs) == 0 {
+			rule.Spec.Cidrs = []string{rule.Spec.Cidr}
+			rule.Spec.Cidr = "" // Clear old field
+			if err := r.Update(ctx, rule); err != nil {
+				log.Error(err, "failed to migrate IPRule Cidr to Cidrs", "name", rule.Name)
+				metricReconcileErrors.WithLabelValues("iprule").Inc()
+				return ctrl.Result{}, err
+			}
+			// Re-queue to process updated object
+			return ctrl.Result{Requeue: true}, nil
+		}
+	}
+
 	svcIPSet, err := r.collectServiceVIPs(ctx)
 	if err != nil {
 		metricReconcileErrors.WithLabelValues("iprule").Inc()
@@ -119,19 +135,30 @@ func (r *IPRuleReconciler) collectServiceVIPs(ctx context.Context) (map[netip.Ad
 	}
 	svcIPSet := map[netip.Addr][]netip.Addr{}
 	for _, svc := range svcList.Items {
+		clusterIPs := svc.Spec.ClusterIPs
+		if len(clusterIPs) == 0 && svc.Spec.ClusterIP != "" {
+			clusterIPs = []string{svc.Spec.ClusterIP}
+		}
+
 		for _, ing := range svc.Status.LoadBalancer.Ingress {
 			if ing.IP == "" {
-				continue
-			}
-			clusterIP, _ := netip.ParseAddr(svc.Spec.ClusterIP)
-			if !clusterIP.IsValid() {
 				continue
 			}
 			svcVIP, _ := netip.ParseAddr(ing.IP)
 			if !svcVIP.IsValid() {
 				continue
 			}
-			svcIPSet[clusterIP] = append(svcIPSet[clusterIP], svcVIP)
+
+			for _, cIPStr := range clusterIPs {
+				clusterIP, _ := netip.ParseAddr(cIPStr)
+				if !clusterIP.IsValid() {
+					continue
+				}
+				// Match address families (IPv4 with IPv4, IPv6 with IPv6)
+				if (clusterIP.Is4() && svcVIP.Is4()) || (clusterIP.Is6() && svcVIP.Is6()) {
+					svcIPSet[clusterIP] = append(svcIPSet[clusterIP], svcVIP)
+				}
+			}
 		}
 	}
 	return svcIPSet, nil
@@ -143,18 +170,22 @@ func (r *IPRuleReconciler) buildDesiredEntryMap(ipRules *apiv1alpha1.IPRuleList,
 		for _, lbIP := range lbIPs {
 			for i := range ipRules.Items {
 				rule := &ipRules.Items[i]
-				cidr, _ := netip.ParsePrefix(rule.Spec.Cidr)
-				if !cidr.IsValid() || !cidr.Contains(lbIP) {
-					continue
-				}
-				entry := ipRuleEntry{IP: clusterIP, Table: rule.Spec.Table, Priority: rule.Spec.Priority, Owner: rule, PrefixLen: cidr.Bits()}
-				key := entry.IP.String() + "|" + strconv.Itoa(entry.Table) + "|" + strconv.Itoa(entry.Priority)
-				if existing, ok := entryMap[key]; ok {
-					if entry.PrefixLen > existing.PrefixLen { // most specific
+
+				// Check all CIDRs in the list
+				for _, cidrStr := range rule.Spec.Cidrs {
+					cidr, _ := netip.ParsePrefix(cidrStr)
+					if !cidr.IsValid() || !cidr.Contains(lbIP) {
+						continue
+					}
+					entry := ipRuleEntry{IP: clusterIP, Table: rule.Spec.Table, Priority: rule.Spec.Priority, Owner: rule, PrefixLen: cidr.Bits()}
+					key := entry.IP.String() + "|" + strconv.Itoa(entry.Table) + "|" + strconv.Itoa(entry.Priority)
+					if existing, ok := entryMap[key]; ok {
+						if entry.PrefixLen > existing.PrefixLen { // most specific
+							entryMap[key] = entry
+						}
+					} else {
 						entryMap[key] = entry
 					}
-				} else {
-					entryMap[key] = entry
 				}
 			}
 		}
@@ -169,7 +200,7 @@ func (r *IPRuleReconciler) applyDesiredConfigs(ctx context.Context, entryMap map
 		annotationSpecHash  = "iprule.operator.brtrm.dev/spec-hash"
 	)
 	for _, e := range entryMap {
-		name := "iprc-" + strings.ReplaceAll(e.IP.String(), ".", "-")
+		name := "iprc-" + strings.ReplaceAll(strings.ReplaceAll(e.IP.String(), ".", "-"), ":", "-")
 		cfg := &apiv1alpha1.IPRuleConfig{}
 		errGet := r.Get(ctx, types.NamespacedName{Name: name}, cfg)
 		if k8serrors.IsNotFound(errGet) {
@@ -286,6 +317,20 @@ func (r *IPRuleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			if oldSvc.Spec.Type != newSvc.Spec.Type {
 				return true
 			}
+
+			// Check ClusterIPs change
+			if len(oldSvc.Spec.ClusterIPs) != len(newSvc.Spec.ClusterIPs) {
+				return true
+			}
+			for i := range oldSvc.Spec.ClusterIPs {
+				if oldSvc.Spec.ClusterIPs[i] != newSvc.Spec.ClusterIPs[i] {
+					return true
+				}
+			}
+			if oldSvc.Spec.ClusterIP != newSvc.Spec.ClusterIP {
+				return true
+			}
+
 			oldIPs := loadBalancerIPs(oldSvc)
 			newIPs := loadBalancerIPs(newSvc)
 			if len(oldIPs) != len(newIPs) {
