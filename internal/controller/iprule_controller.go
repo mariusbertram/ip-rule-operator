@@ -82,6 +82,22 @@ func (r *IPRuleReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Migrate old Cidr field to new Cidrs list
+	for i := range ipRules.Items {
+		rule := &ipRules.Items[i]
+		if rule.Spec.Cidr != "" && len(rule.Spec.Cidrs) == 0 {
+			rule.Spec.Cidrs = []string{rule.Spec.Cidr}
+			rule.Spec.Cidr = "" // Clear old field
+			if err := r.Update(ctx, rule); err != nil {
+				log.Error(err, "failed to migrate IPRule Cidr to Cidrs", "name", rule.Name)
+				metricReconcileErrors.WithLabelValues("iprule").Inc()
+				return ctrl.Result{}, err
+			}
+			// Re-queue to process updated object
+			return ctrl.Result{Requeue: true}, nil
+		}
+	}
+
 	svcIPSet, err := r.collectServiceVIPs(ctx)
 	if err != nil {
 		metricReconcileErrors.WithLabelValues("iprule").Inc()
@@ -143,18 +159,22 @@ func (r *IPRuleReconciler) buildDesiredEntryMap(ipRules *apiv1alpha1.IPRuleList,
 		for _, lbIP := range lbIPs {
 			for i := range ipRules.Items {
 				rule := &ipRules.Items[i]
-				cidr, _ := netip.ParsePrefix(rule.Spec.Cidr)
-				if !cidr.IsValid() || !cidr.Contains(lbIP) {
-					continue
-				}
-				entry := ipRuleEntry{IP: clusterIP, Table: rule.Spec.Table, Priority: rule.Spec.Priority, Owner: rule, PrefixLen: cidr.Bits()}
-				key := entry.IP.String() + "|" + strconv.Itoa(entry.Table) + "|" + strconv.Itoa(entry.Priority)
-				if existing, ok := entryMap[key]; ok {
-					if entry.PrefixLen > existing.PrefixLen { // most specific
+
+				// Check all CIDRs in the list
+				for _, cidrStr := range rule.Spec.Cidrs {
+					cidr, _ := netip.ParsePrefix(cidrStr)
+					if !cidr.IsValid() || !cidr.Contains(lbIP) {
+						continue
+					}
+					entry := ipRuleEntry{IP: clusterIP, Table: rule.Spec.Table, Priority: rule.Spec.Priority, Owner: rule, PrefixLen: cidr.Bits()}
+					key := entry.IP.String() + "|" + strconv.Itoa(entry.Table) + "|" + strconv.Itoa(entry.Priority)
+					if existing, ok := entryMap[key]; ok {
+						if entry.PrefixLen > existing.PrefixLen { // most specific
+							entryMap[key] = entry
+						}
+					} else {
 						entryMap[key] = entry
 					}
-				} else {
-					entryMap[key] = entry
 				}
 			}
 		}
@@ -169,7 +189,7 @@ func (r *IPRuleReconciler) applyDesiredConfigs(ctx context.Context, entryMap map
 		annotationSpecHash  = "iprule.operator.brtrm.dev/spec-hash"
 	)
 	for _, e := range entryMap {
-		name := "iprc-" + strings.ReplaceAll(e.IP.String(), ".", "-")
+		name := "iprc-" + strings.ReplaceAll(strings.ReplaceAll(e.IP.String(), ".", "-"), ":", "-")
 		cfg := &apiv1alpha1.IPRuleConfig{}
 		errGet := r.Get(ctx, types.NamespacedName{Name: name}, cfg)
 		if k8serrors.IsNotFound(errGet) {

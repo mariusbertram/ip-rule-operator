@@ -18,15 +18,15 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1alpha1 "github.com/mariusbertram/ip-rule-operator/api/v1alpha1"
 )
@@ -48,7 +48,7 @@ var _ = Describe("IpRule Controller", func() {
 					Name: resourceName,
 				},
 				Spec: apiv1alpha1.IPRuleSpec{
-					Cidr:     "10.0.0.0/24",
+					Cidrs:    []string{"10.0.0.0/24"},
 					Table:    100,
 					Priority: 1000,
 				},
@@ -110,7 +110,7 @@ var _ = Describe("IpRule Controller", func() {
 					Name: ruleName,
 				},
 				Spec: apiv1alpha1.IPRuleSpec{
-					Cidr:     "10.0.0.0/24",
+					Cidrs:    []string{"10.0.0.0/24"},
 					Table:    200,
 					Priority: 2000,
 				},
@@ -212,6 +212,61 @@ var _ = Describe("IpRule Controller", func() {
 				}
 				return false
 			}, "10s", "500ms").Should(BeTrue())
+		})
+	})
+
+	Context("When migrating old Cidr field", func() {
+		const ruleName = "test-iprule-migration"
+
+		ctx := context.Background()
+
+		BeforeEach(func() {
+			By("creating an IPRule with old Cidr field")
+			rule := &apiv1alpha1.IPRule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: ruleName,
+				},
+				Spec: apiv1alpha1.IPRuleSpec{
+					Cidr:     "10.0.0.0/24",
+					Table:    300,
+					Priority: 3000,
+				},
+			}
+			err := k8sClient.Create(ctx, rule)
+			if err != nil && !errors.IsAlreadyExists(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+
+		AfterEach(func() {
+			By("Cleanup the IPRule")
+			rule := &apiv1alpha1.IPRule{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: ruleName}, rule)
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, rule)).To(Succeed())
+			}
+		})
+
+		It("should migrate Cidr to Cidrs", func() {
+			By("Reconciling the IPRule")
+			controllerReconciler := &IPRuleReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+
+			// Reconcile multiple times to ensure migration and subsequent processing
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Give it a moment to update
+			time.Sleep(100 * time.Millisecond)
+
+			By("Verifying the IPRule was updated")
+			rule := &apiv1alpha1.IPRule{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: ruleName}, rule)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rule.Spec.Cidr).To(BeEmpty())
+			Expect(rule.Spec.Cidrs).To(ContainElement("10.0.0.0/24"))
 		})
 	})
 })
