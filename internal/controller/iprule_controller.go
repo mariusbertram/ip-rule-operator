@@ -135,19 +135,30 @@ func (r *IPRuleReconciler) collectServiceVIPs(ctx context.Context) (map[netip.Ad
 	}
 	svcIPSet := map[netip.Addr][]netip.Addr{}
 	for _, svc := range svcList.Items {
+		clusterIPs := svc.Spec.ClusterIPs
+		if len(clusterIPs) == 0 && svc.Spec.ClusterIP != "" {
+			clusterIPs = []string{svc.Spec.ClusterIP}
+		}
+
 		for _, ing := range svc.Status.LoadBalancer.Ingress {
 			if ing.IP == "" {
-				continue
-			}
-			clusterIP, _ := netip.ParseAddr(svc.Spec.ClusterIP)
-			if !clusterIP.IsValid() {
 				continue
 			}
 			svcVIP, _ := netip.ParseAddr(ing.IP)
 			if !svcVIP.IsValid() {
 				continue
 			}
-			svcIPSet[clusterIP] = append(svcIPSet[clusterIP], svcVIP)
+
+			for _, cIPStr := range clusterIPs {
+				clusterIP, _ := netip.ParseAddr(cIPStr)
+				if !clusterIP.IsValid() {
+					continue
+				}
+				// Match address families (IPv4 with IPv4, IPv6 with IPv6)
+				if (clusterIP.Is4() && svcVIP.Is4()) || (clusterIP.Is6() && svcVIP.Is6()) {
+					svcIPSet[clusterIP] = append(svcIPSet[clusterIP], svcVIP)
+				}
+			}
 		}
 	}
 	return svcIPSet, nil
@@ -306,6 +317,20 @@ func (r *IPRuleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			if oldSvc.Spec.Type != newSvc.Spec.Type {
 				return true
 			}
+
+			// Check ClusterIPs change
+			if len(oldSvc.Spec.ClusterIPs) != len(newSvc.Spec.ClusterIPs) {
+				return true
+			}
+			for i := range oldSvc.Spec.ClusterIPs {
+				if oldSvc.Spec.ClusterIPs[i] != newSvc.Spec.ClusterIPs[i] {
+					return true
+				}
+			}
+			if oldSvc.Spec.ClusterIP != newSvc.Spec.ClusterIP {
+				return true
+			}
+
 			oldIPs := loadBalancerIPs(oldSvc)
 			newIPs := loadBalancerIPs(newSvc)
 			if len(oldIPs) != len(newIPs) {
